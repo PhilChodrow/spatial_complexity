@@ -9,118 +9,46 @@ library(tidyr)
 library(magrittr)
 library(ggrepel)
 library(grid)
+library(rgdal)
 
 setwd("~/projects/spatial_complexity/tech_report")
 
 
 # Toy cities ----------
 
-expand.grid(x = 1:8, y = 1:8) %>% 
-	mutate(`(a)` = 1,
-		   `(b)` = .5,
-		   `(c)` = (x > 4)*1,
-		   `(d)` = (x + y) %% 2) %>%
-	gather(key = model, value = p, -x, -y) %>%
-	ggplot(aes(x = x, y = y)) + 
-	theme_minimal() +
-	theme(axis.ticks = element_blank(), 
-		  axis.text.x = element_blank(), 
-		  axis.text.y = element_blank(),
-		  panel.background = element_rect(),
-		  panel.grid.major = element_line(size = 0),
-		  panel.grid.minor = element_line(size = 0),
-		  plot.margin=unit(c(0,0,0,0),"mm")) + 
-	geom_tile(aes(fill = p)) + 
-	scale_fill_continuous(low = 'white', high = 'black ', limits=c(0,1)) + 
-	facet_grid(~model) +
-	xlab('') + 
-	ylab('') + 
-	guides(fill=FALSE)
-
+checkerboard_illustration()
 ggsave('report/figs/toy.png', width = 5, height = 1.9)
-
 
 # Methodological Illustration ----------------
 
-boston <- compx::get_race_data(state = 'MA', counties = c(25))
-boston@data$area <- 1:length(boston) %>%
-	as.matrix() %>%
-	apply(MARGIN = 1,FUN = function(i) boston@polygons[[i]]@Polygons[[1]]@area * 85 * 111) # lat/lon conversion (approximate)
+# method_illustration()
+# ggsave('report/figs/method.png', width = 3, height = 3)
 
-boston@data$density <- boston@data$total / boston@data$area
 
-races <- c('Black', 'Hispanic', 'Asian', 'White', 'Other')
 
-xx = spsample(boston, type="hexagonal", cellsize=.01)
-xxpl = HexPoints2SpatialPolygons(xx)
-grid_radius = .01 * sqrt(85 * 111)
-
-# Define information measures on the grid 
-h <- function(i){
-	window <- boston[xxpl[i,],]@data[,c(races, 'total', 'area')]
-	window <- window / window$area # total becomes density
-	c(mean(window$total), 4 * mutual_info(window[,races])/grid_radius^2) # returns estimated density and mutual info
-}
-
-# Compute measures on the grid and collect as df
-df <- 1:length(xxpl) %>%
-	as.matrix() %>%
-	apply(MARGIN = 1, FUN = h) %>% 
-	t %>% 
-	as.data.frame()
-names(df) <- c('density', 'info')
-df$id <- paste0('ID', row.names(df))
-
-hexgrid <- fortify(xxpl) %>% 
-	left_join(df, by = c('id' = 'id')) 
-
-bbox <- c(min(hexgrid$long), min(hexgrid$lat), max(hexgrid$long), max(hexgrid$lat))
-map <- get_map(location = bbox, maptype = 'terrain-background',)
-
-p <- ggmap(map,darken = .5) 
-p <- p + 
-	geom_polygon(data = hexgrid, aes(x = long, y = lat, group = group, fill = info), alpha = .8) +
-	scale_fill_continuous(low = 'white', high = 'steelblue', name= expression(J[Y](x)), breaks = c(0, 2.5, 5)) +
-	theme(axis.ticks = element_blank(), 
-		  axis.text.x = element_blank(), 
-		  axis.text.y = element_blank()) + 
-	xlab('') + 
-	ylab('') + 
-	theme(legend.justification=c(.8,0), 
-		  legend.position=c(1,0), 
-		  legend.background = element_rect(fill = alpha('blue', 0)),
-		  legend.title = element_text(colour="white"),
-		  legend.text = element_text(colour="white"),
-		  legend.key.size = unit(2, "mm"),
-		  legend.text = element_text(size = rel(.1))) 
-
-p
-
-ggsave('report/figs/method.png', width = 3, height = 3)
 
 # MAIN COMPUTATION ---------------
 
 # Prep city list 
 
-cities <- read_csv('cities.csv')
-cities <- cities %>%
-	aggregate(county~state + city, c, data = .) %>%
-	left_join(cities[,c('city', 'state')]) %>%
-	filter(!duplicated(city)) %>%
-	mutate(state = as.character(state))
-
+cities <- city_list('msas.csv')
+density_list <- read_csv('density_list.csv') %>% filter(density > 200)
 # cities <- cities %>% filter(city == 'New York City')
 
 f <- function(city){
 	
 	# Pull down race data 
-	sub <- cities[cities$city == city,]
+	sub <- cities[cities$name == city,]
 	
 	g <- function(i){
-		state = sub$state[i]
-		counties = unlist(sub$county[i])
-		tracts <- compx::get_race_data(state = state, counties = counties)
-		tracts <- spChFIDs(tracts,as.character(paste(state,rownames(as(tracts,"data.frame")),sep="_")))
+		state    <- sub$state[i]
+		tracts <- readOGR(dsn = paste0('data/',state), layer = 'geo', verbose = FALSE)
+		tracts@data <- tracts@data %>%
+			mutate(county = substr(GEOID, start = 3, stop = 5),
+				   county = as.integer(county))
+		counties <- unlist(sub$county[i])
+		tracts <- tracts[is.element(tracts@data$county, counties),]
+		tracts   <- spChFIDs(tracts,as.character(paste(state,rownames(as(tracts,"data.frame")),sep="_")))
 	}
 	
 	tracts <- lapply(1:nrow(sub), g)
@@ -128,16 +56,16 @@ f <- function(city){
 	
 	# Modify the race data a bit  
 	
+	# conversion (approximate)
 	race@data$area <- 1:length(race) %>%
 		as.matrix() %>%
-		apply(MARGIN = 1,FUN = function(i) race@polygons[[i]]@Polygons[[1]]@area * 85 * 111) # lat/lon conversion (approximate)
-	
-	race@data$density <- race@data$total / race@data$area
+		apply(MARGIN = 1,FUN = function(i) race@polygons[[i]]@Polygons[[1]]@area * 85 * 111) # lat/lon
 	
 	# Make the grid  
 	races <- c('Black', 'Hispanic', 'Asian', 'White', 'Other')
 	
 	xx = spsample(race, type="hexagonal", cellsize=.01)
+	print(paste0(city, ': ', nrow(race@data), ' tracts || ', length(xx), ' grid cells'))
 	xxpl = HexPoints2SpatialPolygons(xx)
 	grid_radius = sqrt(85 * 111) * .01
 	
@@ -165,9 +93,9 @@ f <- function(city){
 		city = city,
 		area = sum(race@data$area),
 		population = sum(race@data$total),
-		weighted_density = ((race@data$total^2 / race@data$area) %>% sum) / sum(race$total),
+		weighted_density = ((race@data$total^2 / race@data$area) %>% sum) / sum(race@data$total),
 		n_per_hex = mean(df$n), 
-		H_X = H(race$total / sum(race$total)),
+		H_X = H(race@data$total / sum(race@data$total)),
 		H_Y = race@data[,races] %>% entropy(),
 		I_XY = race@data[,races] %>% mutual_info(),
 		local.H_Y = weighted.mean(df$entropy, df$density),
@@ -181,15 +109,14 @@ f <- function(city){
 # Cache logic
 if(file.exists('cities_cache.csv')){
 	cache <- read_csv('cities_cache.csv')
-	cities %<>% anti_join(cache)
+	density_list %<>% anti_join(cache, by = c('name' = 'city'))
 }
 
 # Loop over cities and collect results
 collector = list()
 
-for(city in cities$city){
-	print(city)
-	collector[[city]] = f(city)
+for(city in unique(density_list$name)){
+	collector[[city]] = tryCatch(f(city), error = function(e) NULL)
 }
 
 summary_frame <- data.frame(
@@ -203,7 +130,8 @@ summary_frame <- data.frame(
 	I_XY = numeric(),
 	local.H_Y = numeric(),
 	J = numeric(),
-	weighted_J = numeric()
+	weighted_J = numeric(),
+	density = numeric()
 )
 
 for(city in names(collector)){
@@ -221,7 +149,7 @@ write.csv(cache, 'cities_cache.csv', row.names = FALSE)
 
 cache$density = cache$population / cache$area
 
-
+cache
 
 
 # Viz 1 ------------------
@@ -235,12 +163,13 @@ lm_eqn <- function(df){
 }
 
 cache %>%
-	ggplot(aes(x = population/area, y = weighted_J)) + 
+	ggplot(aes(x = density, y = weighted_J)) + 
 	geom_smooth(method = 'lm', se = FALSE, color = 'grey') +
-	annotate('text', x = 4000, y = .3, label = lm_eqn(cache), parse = T) + 
+	annotate('text', x = 300, y = .1, label = lm_eqn(cache), parse = T) + 
 	geom_text_repel(aes(label = city), size = 3) + 
 	geom_point(color = 'firebrick') + 
-	scale_x_continuous(trans = 'log10') + 
+	scale_x_continuous(trans = 'log10') +
+	# scale_y_continuous(trans = 'log10') +
 	theme_minimal() +
 	xlab(expression(rho~(population/km^{2}))) + 
 	ylab(expression(J(X,Y))) + 
