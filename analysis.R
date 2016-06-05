@@ -16,8 +16,8 @@ setwd("~/projects/spatial_complexity/tech_report")
 
 # Toy cities ----------
 
-checkerboard_illustration()
-ggsave('report/figs/toy.png', width = 5, height = 1.9)
+# checkerboard_illustration()
+# ggsave('report/figs/toy.png', width = 5, height = 1.9)
 
 # Methodological Illustration ----------------
 
@@ -31,54 +31,58 @@ ggsave('report/figs/toy.png', width = 5, height = 1.9)
 
 # Prep city list 
 
-cities <- city_list('msas.csv')
-density_list <- read_csv('density_list.csv') %>% filter(density > 200)
+# cities <- city_list('msas.csv')
+# density_list <- read_csv('density_list.csv') %>% filter(density > 200)
 # cities <- cities %>% filter(city == 'New York City')
 
-f <- function(city){
-	
-	# Pull down race data 
-	sub <- cities[cities$name == city,]
-	
-	g <- function(i){
-		state    <- sub$state[i]
-		tracts <- readOGR(dsn = paste0('data/',state), layer = 'geo', verbose = FALSE)
-		tracts@data <- tracts@data %>%
-			mutate(county = substr(GEOID, start = 3, stop = 5),
-				   county = as.integer(county))
-		counties <- unlist(sub$county[i])
-		tracts <- tracts[is.element(tracts@data$county, counties),]
-		tracts   <- spChFIDs(tracts,as.character(paste(state,rownames(as(tracts,"data.frame")),sep="_")))
-	}
-	
-	tracts <- lapply(1:nrow(sub), g)
-	race <- do.call(rbind, tracts)
-	
-	# Modify the race data a bit  
-	
-	# conversion (approximate)
-	race@data$area <- 1:length(race) %>%
-		as.matrix() %>%
-		apply(MARGIN = 1,FUN = function(i) race@polygons[[i]]@Polygons[[1]]@area * 85 * 111) # lat/lon
-	
-	# Make the grid  
+
+# Cache logic
+cities <- list.files('cities') %>%
+	sort(decreasing = T)
+
+if(file.exists('cities_cache.csv')){
+	cache <- read_csv('cities_cache.csv')
+	cities <-  cities[!is.element(cities, cache$city)]
+}else{
+	cache <- data.frame(
+		city = character(),
+		area = numeric(),
+		population = numeric(),
+		density = numeric(),
+		weighted_density = numeric(),
+		n_per_hex = numeric(),
+		H_X = numeric(),
+		H_Y = numeric(),
+		I_XY = numeric(),
+		local.H_Y = numeric(),
+		J = numeric(),
+		weighted_J = numeric())
+}
+
+
+for(city in cities){
 	races <- c('Black', 'Hispanic', 'Asian', 'White', 'Other')
+	tracts <- readOGR(dsn = paste0('cities/',city), layer = 'geo', verbose = FALSE)
+	tracts <- tracts[tracts@data$total > 0,]
+	tracts@data$area <- tracts@data$ALAND / 1000^2		
+	# tracts <- tracts[tracts@data$area < 20,] # careful with this
 	
-	xx = spsample(race, type="hexagonal", cellsize=.01)
-	print(paste0(city, ': ', nrow(race@data), ' tracts || ', length(xx), ' grid cells'))
+	xx = spsample(tracts, type="hexagonal", cellsize=.01)
+	print(paste0(city, ': ',  nrow(tracts@data), ' tracts || ', length(xx), ' grid cells'))
 	xxpl = HexPoints2SpatialPolygons(xx)
 	grid_radius = sqrt(85 * 111) * .01
 	
+	
 	# Define information measures on the grid 
 	h <- function(i){
-		window <- race[xxpl[i,],]@data[,c(races, 'total', 'area')]
-		window <- window / window$area # total becomes density
+		window <- tracts[xxpl[i,],]@data[,c(races, 'total', 'area')]
+		window <- window / (window$area) # total becomes density
 		c(mean(window$total), 
 		  4 * mutual_info(window[,races]) / grid_radius^2, 
 		  H(colSums(window[,races]) /sum(window[,races])), 
 		  nrow(window)) # returns estimated density and mutual info
 	}
-	
+			
 	# Compute measures on the grid and collect as df
 	df <- 1:length(xxpl) %>%
 		as.matrix() %>%
@@ -90,71 +94,37 @@ f <- function(city){
 	
 	# summarized output
 	out <- data.frame(
-		city = city,
-		area = sum(race@data$area),
-		population = sum(race@data$total),
-		weighted_density = ((race@data$total^2 / race@data$area) %>% sum) / sum(race@data$total),
+		city = city, 
+		area = sum(tracts@data$area),
+		population = sum(tracts@data$total),
+		density = sum(tracts@data$total) / sum(tracts@data$area),
+		weighted_density = ((tracts@data$total^2 / tracts@data$area) %>% sum) / sum(tracts@data$total),
 		n_per_hex = mean(df$n), 
-		H_X = H(race@data$total / sum(race@data$total)),
-		H_Y = race@data[,races] %>% entropy(),
-		I_XY = race@data[,races] %>% mutual_info(),
+		H_X = H(tracts@data$total / sum(tracts@data$total)),
+		H_Y = tracts@data[,races] %>% entropy(),
+		I_XY = tracts@data[,races] %>% mutual_info(),
 		local.H_Y = weighted.mean(df$entropy, df$density),
 		J = mean(df$info),
 		weighted_J = weighted.mean(df$info, df$density)
 	)
 	
-	return(list(details = df, summary = out))
+	cache <- rbind(cache, out)
+	write.csv(cache, 'cities_cache.csv', row.names = FALSE)	
 }
 
-# Cache logic
-if(file.exists('cities_cache.csv')){
-	cache <- read_csv('cities_cache.csv')
-	density_list %<>% anti_join(cache, by = c('name' = 'city'))
-}
-
-# Loop over cities and collect results
-collector = list()
-
-for(city in unique(density_list$name)){
-	collector[[city]] = tryCatch(f(city), error = function(e) NULL)
-}
-
-summary_frame <- data.frame(
-	city = character(),
-	area = numeric(),
-	population = numeric(),
-	weighted_density = numeric(),
-	n_per_hex = numeric(),
-	H_X = numeric(),
-	H_Y = numeric(),
-	I_XY = numeric(),
-	local.H_Y = numeric(),
-	J = numeric(),
-	weighted_J = numeric(),
-	density = numeric()
-)
-
-for(city in names(collector)){
-	summary_frame <- rbind(summary_frame, collector[[city]]$summary)
-	write_csv(collector[[city]]$details, paste0('details_cache/', city, '.csv'))
-}
-
-if(file.exists('cities_cache.csv')){
-	cache <- cache %>% rbind(summary_frame)
-}else{
-	cache <- summary_frame
-}
-write.csv(cache, 'cities_cache.csv', row.names = FALSE)
+	
 
 
-cache$density = cache$population / cache$area
 
-cache
+	# Make the grid  
+
+	
+
 
 
 # Viz 1 ------------------
 lm_eqn <- function(df){
-	m <- lm(weighted_J ~ log(density), data = df) 
+	m <- lm(weighted_J ~ density, data = df) 
 	eq <- substitute(italic(y) == a + b %.% ~'log' ~italic(rho)*","~~italic(r)^2~"="~r2, 
 					 list(a = format(coef(m)[1], digits = 2), 
 					 	 b = format(coef(m)[2], digits = 2), 
@@ -162,18 +132,19 @@ lm_eqn <- function(df){
 	as.character(as.expression(eq))                 
 }
 
-cache %>%
-	ggplot(aes(x = density, y = weighted_J)) + 
+cache %>% 
+	filter(!grepl('Los Angeles', city)) %>%
+	ggplot(aes(x = density, y = weighted_J)) +
 	geom_smooth(method = 'lm', se = FALSE, color = 'grey') +
-	annotate('text', x = 300, y = .1, label = lm_eqn(cache), parse = T) + 
-	geom_text_repel(aes(label = city), size = 3) + 
-	geom_point(color = 'firebrick') + 
-	scale_x_continuous(trans = 'log10') +
+	annotate('text', x = 300, y = .1, label = lm_eqn(cache), parse = T) +
+	geom_text_repel(aes(label = city), size = 3) +
+	geom_point(color = 'firebrick') +
+	# scale_x_continuous(trans = 'log10') +
 	# scale_y_continuous(trans = 'log10') +
 	theme_minimal() +
-	xlab(expression(rho~(population/km^{2}))) + 
-	ylab(expression(J(X,Y))) + 
-	annotation_logticks() + 
+	xlab(expression(rho~(population/km^{2}))) +
+	ylab(expression(J(X,Y))) +
+	annotation_logticks() +
 	ggtitle('Dependence of spatial complexity on population density')
 
 ggsave('report/figs/density_fisher.png', width = 8, height = 4)

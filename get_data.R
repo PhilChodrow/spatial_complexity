@@ -1,25 +1,30 @@
 setwd("~/projects/spatial_complexity/tech_report")
 
-library(readr)
-library(dplyr)
+library(sp)
 library(compx)
+library(acs)
+library(plyr)
+library(dplyr)
+library(readr)
+library(ggmap)
 library(tidyr)
+library(magrittr)
+library(ggrepel)
+library(grid)
 library(rgdal)
+library(tigris)
+library(stringr)
+library(acs)
 
 
-cities <- read_csv('msas.csv')
-
-cities <- cities %>%
-	separate(name, c('name','state'), sep = ',') %>%
-	mutate(state = substr(county_name, start  = nchar(county_name) - 1, stop  = nchar(county_name)),
-		   county_num = as.integer(substr(county_num, start = 3, stop = 5))) %>%
-	select(-county_name)
-
-county_list <- aggregate(county_num ~ state, c, data = cities)
+ua <- read_table('ua_list_all.txt')
+ua$state = word(ua$NAME, -1)
 
 f <- function(state){
-	
-	counties <- county_list$county_num[county_list$state == state][[1]]
+	counties <- acs.fetch(geography=geo.make(state=state, county="*"), 
+				   endyear = 2014,
+				   table.number="B01003")
+	counties <- as.numeric(geography(counties)[[3]])
 	
 	race <- acs::acs.fetch(endyear = 2014,
 						   span = 5,
@@ -54,79 +59,28 @@ f <- function(state){
 			   White = Hispanic.or.Latino.by.Race..Not.Hispanic.or.Latino..White.alone,
 			   Black = Hispanic.or.Latino.by.Race..Not.Hispanic.or.Latino..Black.or.African.American.alone,
 			   Asian = Hispanic.or.Latino.by.Race..Not.Hispanic.or.Latino..Asian.alone,
-			   GEOID)
-	
+			   GEOID) %>%
+		mutate(total = Hispanic + White + Black + Asian + Other)
+
 	tracts <- tigris::block_groups(state = state, county = counties, cb=TRUE)
+	tracts@data$area <- tracts@data$ALAND / 1000^2
 	
 	tracts <- tigris::geo_join(tracts, race, "GEOID", "GEOID")
-	
-	tracts@data$area <- 1:length(tracts) %>%
-		as.matrix() %>%
-		apply(MARGIN = 1,FUN = function(i) tracts@polygons[[i]]@Polygons[[1]]@area * 85 * 111) # lat/lon
-	
-	tracts@data <- tracts@data %>%
-		mutate(name = row.names(.),
-			   total = Hispanic + Other + White + Black + Asian,
-			   density = total / area)
-	
-	tracts <- tracts[!is.na(tracts@data$total),]
-	tracts <- tracts[tracts@data$total > 0,]
 	writeOGR(tracts, paste0("data/", state),'geo', driver = 'ESRI Shapefile', morphToESRI = TRUE)
-	return()
 }
 
-for(state in unique(county_list$state)){
-	if(!dir.exists(paste0('data/', state))) {
+for(state in unique(toupper(ua$state[nchar(ua$state) == 2]))){
+	if(!is.element(state,list.files('data'))){
 		print(state)
-		try(f(state))
+		tryCatch(f(state), error = function(e) NULL)
 	}
 }
+f('DC') # need to get DC separately
 
 
-# -----------------
-# -----------------
-# -----------------
 
-cities <- city_list('msas.csv')
 
-h <- function(city){
-	sub <- cities[cities$name == city,]
-	g <- function(i){
-		state    <- sub$state[i]
-		tracts <- readOGR(dsn = paste0('data/',state), layer = 'geo', verbose = FALSE)
-		tracts@data <- tracts@data %>%
-			mutate(county = substr(GEOID, start = 3, stop = 5),
-				   county = as.integer(county))
-		counties <- unlist(sub$county[i])
-		tracts <- tracts[is.element(tracts@data$county, counties),]
-		tracts   <- spChFIDs(tracts,as.character(paste(state,rownames(as(tracts,"data.frame")),sep="_")))
-		tracts@data$area <- 1:length(tracts) %>%
-			as.matrix() %>%
-			apply(MARGIN = 1,FUN = function(i) tracts@polygons[[i]]@Polygons[[1]]@area * 85 * 111) # lat/lon
-		tracts
-	}
-	tracts <- lapply(1:nrow(sub), g)
-	tracts <- do.call(rbind, tracts)
-	density <- sum(tracts@data$total) / sum(tracts@data$area)
-	weighted_density <- sum(tracts@data$total^2) / (sum(tracts@data$area) * sum(tracts@data$total))
-	return(c(density, weighted_density))
-}
 
-density_list = data.frame(name = character(),
-						  density = numeric(),
-						  weighted_density = numeric())
 
-for(name in unique(cities$name)){
-	print(name)
-	density = tryCatch(h(name), error = function(e) NULL)
-	if(!is.null(density)){
-		add <- data.frame(name = name,
-						  density = density[1],
-						  weighted_density = density[2])
-		density_list <- rbind(density_list, add)	
-	}
-	
-}
 
-write_csv(density_list, 'density_list.csv')
 
