@@ -6,7 +6,7 @@ output:
   html_document:
     toc: true
     toc_float: true
-    theme: flatly
+    theme: simplex
 ---
 
 ```{r warning = FALSE, message = FALSE, echo = FALSE}
@@ -23,6 +23,7 @@ library(ggrepel)
 library(DT)
 library(caTools)
 library(tidyr)
+library(maptools)
 
 columns = c('Asian', 'Black', 'Other', 'White', 'Hispanic')
 
@@ -173,7 +174,12 @@ datatable(tab, options = list(pageLength = 10), rownames = FALSE,
 
 ```{r}
 
-loss_curves <- read_csv('throughput/loss_curves.csv')
+loss_curves <- read_csv('throughput/loss_curves.csv') %>% 
+	group_by(city) %>% 
+	arrange(desc(I_XY)) %>% 
+	mutate(I_XY = max(I_XY) - I_XY,
+		   nclust = row_number())
+	
 info_summary <- read_csv('throughput/info_cache.csv')
 
 join_cols <- c('area', 'population', 'density', 'H_X', 'H_Y', 'local.H_Y', 'weighted_J', 'city')
@@ -185,50 +191,53 @@ loss_curves <- loss_curves %>% left_join(info_summary[,join_cols])
 
 ```{r}
 
-cluster_map <- function(city){
+cluster_map <- function(city, nclusters = 10){
 	tracts <- readOGR(dsn = paste0('data/cities/',city), layer = 'geo', verbose = FALSE)
 	tracts <- tracts[sum(tracts@data[,columns]) != 0,]
 	clusters <- readRDS(paste0('throughput/clusterings/', city))
 	
-	tracts@data$cluster <- cutree(clusters,10)
+	tracts@data$cluster <- cutree(clusters,nclusters)
+	overlay <- unionSpatialPolygons(tracts, IDs = tracts@data$cluster)
 	
 	tracts@data <- tracts@data %>%
 		mutate(id = as.character(row_number() - 1))
 	
 	to_plot <- fortify(tracts)
+	to_overlay <- fortify(overlay)
 	
 	to_plot <- to_plot %>% 
 		left_join(tracts@data[,c('id', 'cluster')])
 	
 	to_plot %>% 
-		ggplot(aes(x = long, y = lat, group = id, fill = cluster)) +
-		geom_polygon() + 
+		ggplot() +
+		geom_polygon(aes(x = long, y = lat, group = group, fill = cluster)) + 
 		scale_fill_distiller(palette = 'Set3', guide = FALSE) + 
 		ggtitle(paste0('Example clustering for ', city)) + 
-		theme_minimal() + 
+		theme_minimal() +
 		theme(axis.ticks = element_blank(),
 			  axis.text = element_blank(),
 			  axis.title = element_blank(),
-			  panel.grid = element_blank()) 
+			  panel.grid = element_blank()) +
+		geom_polygon(aes(x = long, y= lat, group = group), data = to_overlay, fill = NA, size = .3, color = 'white')
 
 }
 
-cluster_map('Detroit')
+cluster_map('Chicago', nclusters = 10)
 
 ggsave('figs/example_cluster_map.png')
 
 ```
 
-```{r}
+```{r fig.cap='Example clusterings for 4 major cities.'}
 
-make_cluster_groups <- function(city){
+make_cluster_groups <- function(city, nclusters = 10){
 	tracts <- readOGR(dsn = paste0('data/cities/',city), layer = 'geo', verbose = FALSE)
 	tracts <- tracts[sum(tracts@data[,columns]) != 0,]
 	clusters <- readRDS(paste0('throughput/clusterings/', city))
 	
-	tracts@data$cluster <- cutree(clusters,10)
+	tracts@data$cluster <- cutree(clusters,nclusters)
 	
-	I = mutual_info(tracts@data[,c(columns, 'cluster')])
+	I <- mutual_info(tracts@data[,c(columns, 'cluster')],group_col = 'cluster')
 	
 	tracts@data <- tracts@data %>%
 		mutate(id = as.character(row_number() - 1))
@@ -242,7 +251,7 @@ make_cluster_groups <- function(city){
 		ungroup() %>% 
 		spread(key = race, value = n, fill = 0) %>% 
 		arrange(desc(White)) %>% 
-		mutate(cluster = factor(1:10, levels = 1:10)) %>%  
+		mutate(cluster = factor(1:nclusters, levels = 1:nclusters)) %>%  
 		gather(key = race, value = p, -cluster) %>% 
 		mutate(city = city,
 			   I = I,
@@ -250,10 +259,11 @@ make_cluster_groups <- function(city){
 		
 }
 
-df <- rbind(make_cluster_groups('Detroit'), 
-	  make_cluster_groups('Boston'),
-	  make_cluster_groups('Dallas'),
-	  make_cluster_groups('Atlanta')) 
+nclusters = 5
+df <- rbind(make_cluster_groups('Detroit', 3), 
+	  make_cluster_groups('Boston', 5),
+	  make_cluster_groups('Chicago', 4),
+	  make_cluster_groups('Atlanta', 2)) 
 
 df %>% 
 	ggplot(aes(y = race, x = cluster, fill = p)) + 
@@ -273,10 +283,6 @@ ggsave('figs/example_clusters.png')
 
 ```
 
-```{r}
-
-```
-
 
 
 ## Loss curves
@@ -291,7 +297,7 @@ loss_curves %>%
 	ggplot() +
 	aes(x = nclust, y = I_XY, group = city) +
 	geom_path(aes(color = weighted_J)) +
-	geom_point(aes(color = weighted_J), size = .3) +
+	# geom_point(aes(color = weighted_J), size = .3) +
 	scale_x_continuous(trans = 'log10', limits = c(1, max(loss_curves$nclust) + 1000)) +
 	# scale_y_continuous(trans = 'log10') +
 	geom_text(aes(x = nclust, y = I_XY, label = city, hjust = -.2), data = end_points) +

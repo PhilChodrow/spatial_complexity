@@ -28,20 +28,16 @@ if(!dir.exists('throughput/clusterings')){
 	dir.create('throughput/clusterings')
 }
 
-
 for(city in cities){
 	print(city)
-	x <- numeric()
 	spdf <- readOGR(dsn = paste0('data/cities/', city), layer = 'geo')
 	spdf <- spdf[sum(spdf@data[,columns]) != 0,]
-	a <- info_clust(spdf, columns)
+	df <- spdf@data[,columns]
+	row.names(df) <- 1:nrow(df)
+	constraint <- gRelate(spdf, byid = TRUE, pattern = '****1****')
+	a <- info_clust(df, constraint)
 	saveRDS(a, file = paste0('throughput/clusterings/',city))
-	for(i in 1:nrow(spdf@data)){
-		spdf@data$cluster <- factor(cutree(a, i))
-		x[i] <- mutual_info(data = spdf@data[,c(columns, 'cluster')], group_col = 'cluster')
-	}
-
-	added <- data.frame('I_XY' = x, 'nclust' = 1:nrow(spdf), 'city' = city)
+	added <- data.frame('I_XY' = c(0,a$height), 'nclust' = 1:nrow(spdf), 'city' = city)
 	cache <- rbind(cache, added)
 	write_csv(cache,'throughput/loss_curves.csv')
 }
