@@ -24,7 +24,7 @@ library(rgdal, quietly = TRUE)
 
 
 cities <- list.files('data/cities')
-
+cities <- cities[length(cities):1]
 
 
 if(!dir.exists('throughput/grids')){
@@ -57,52 +57,53 @@ if(file.exists('throughput/info_cache.csv')){
 		weighted_J = numeric())
 }
 
+resolution <- 1
 
 for(city in cities){
 	races <- c('Black', 'Hispanic', 'Asian', 'White', 'Other')
 	tracts <- readOGR(dsn = paste0('data/cities/',city), layer = 'geo', verbose = FALSE)
 	tracts <- tracts[tracts@data$total > 0,]
-	tracts@data$area <- tracts@data$ALAND / 1000^2	
+	tracts@data$area <- tracts@data$ALAND / 1000^2
 	tracts <- tracts[tracts@data$total / tracts@data$area > 50,] # at least 50 people per km^2
-	
-	radius = 1/sqrt(85 * 111) * 1/2 # (roughly 1 km after lat-lon conversion)
+
+	radius = 1/sqrt(85 * 111) * resolution # (roughly 1 km after lat-lon conversion)
 	xx = spsample(tracts, type="hexagonal", cellsize=radius)
 	print(paste0(city, ': ',  nrow(tracts@data), ' tracts || ', length(xx), ' grid cells'))
 	xxpl = HexPoints2SpatialPolygons(xx)
-	
-	# Define information measures on the grid 
+
+	# Define information measures on the grid
 	h <- function(i){
 		window <- tracts[xxpl[i,],]@data[,c(races, 'total', 'area')]
 		window <- window / (window$area) # total becomes density
-		c(mean(window$total), 
-		  4 * mutual_info(window[,races]) / (1/2)^2,  
-		  H(colSums(window[,races]) /sum(window[,races])), 
+		c(mean(window$total),
+		  4 * mutual_info(window[,races]) / resolution^2,
+		  H(colSums(window[,races]) /sum(window[,races])),
 		  nrow(window)) # returns estimated density and mutual info
 	}
-			
+
 	# Compute measures on the grid and collect as df
 	df <- 1:length(xxpl) %>%
 		as.matrix() %>%
-		apply(MARGIN = 1, FUN = h) %>% 
-		t %>% 
+		apply(MARGIN = 1, FUN = h) %>%
+		t %>%
 		as.data.frame()
 	names(df) <- c('density', 'info', 'entropy', 'n')
 	row.names(df) <- paste0('ID', row.names(df))
-	
-	
+
+
 	to_save <- SpatialPolygonsDataFrame(xxpl, data = df)
 	tryCatch(writeOGR(to_save, paste0("throughput/grids/", city),'geo', driver = 'ESRI Shapefile', morphToESRI = TRUE),
 			 error = function(e) NULL)
-	
-	
+
+
 	# summarized output
 	out <- data.frame(
-		city = city, 
+		city = city,
 		area = sum(tracts@data$area),
 		population = sum(tracts@data$total),
 		density = sum(tracts@data$total) / sum(tracts@data$area),
 		weighted_density = ((tracts@data$total^2 / tracts@data$area) %>% sum) / sum(tracts@data$total),
-		n_per_hex = mean(df$n), 
+		n_per_hex = mean(df$n),
 		H_X = H(tracts@data$total / sum(tracts@data$total)),
 		H_Y = tracts@data[,races] %>% entropy(),
 		I_XY = tracts@data[,races] %>% mutual_info(),
@@ -110,7 +111,7 @@ for(city in cities){
 		J = mean(df$info),
 		weighted_J = weighted.mean(df$info, df$density)
 	)
-	
+
 	cache <- rbind(cache, out)
-	write.csv(cache, 'throughput/info_cache.csv', row.names = FALSE)	
+	write.csv(cache, 'throughput/info_cache.csv', row.names = FALSE)
 }

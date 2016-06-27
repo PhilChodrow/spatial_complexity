@@ -14,8 +14,9 @@ columns <- c('White', 'Black', 'Asian', 'Hispanic', 'Other')
 
 # --------------------
 
-summary <- read_csv('throughput/info_cache.csv')
-cities <- summary$city
+cities <- list.files('data/cities/')
+cities <- cities[length(cities):1]
+
 
 if(file.exists('throughput/loss_curves.csv')){
 	cache <- read_csv('throughput/loss_curves.csv')
@@ -34,6 +35,7 @@ for(city in cities){
 	spdf <- spdf[sum(spdf@data[,columns]) != 0,]
 	df <- spdf@data[,columns]
 	row.names(df) <- 1:nrow(df)
+	print('Computing adjacency matrix')
 	constraint <- gRelate(spdf, byid = TRUE, pattern = '****1****')
 	a <- info_clust(df, constraint)
 	saveRDS(a, file = paste0('throughput/clusterings/',city))
