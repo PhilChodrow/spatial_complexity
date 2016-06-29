@@ -1,7 +1,7 @@
 library(sp, quietly = TRUE)
 library(compx, quietly = TRUE)
 library(acs, quietly = TRUE)
-# library(plyr, quietly = TRUE)
+library(plyr, quietly = TRUE)
 library(dplyr, quietly = TRUE)
 library(readr, quietly = TRUE)
 library(ggmap, quietly = TRUE)
@@ -17,8 +17,9 @@ library(acs, quietly = TRUE)
 
 # get list of states
 
-states <- read_csv('states.csv')
-states <- states$Abbreviation
+cities <- read_csv('assumptions/cities.csv')
+cities$state = word(cities$state, -1)
+
 
 if(!dir.exists('data/states')){
 	dir.create('data/states')
@@ -77,9 +78,11 @@ f <- function(state){
 }
 
 
-# Get all the states
 
-for(state in states){
+
+# Get all the states
+cities <- c(unique(toupper(cities$state[nchar(cities$state) == 2])), 'DC')
+for(state in cities){
 	if(!is.element(state,list.files('data/states'))){
 		print(state)
 		tryCatch(f(state), error = function(e) NULL)
