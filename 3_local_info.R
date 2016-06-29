@@ -1,3 +1,5 @@
+resolution <- 1/2
+
 library(sp, quietly = TRUE)
 library(compx, quietly = TRUE)
 library(acs, quietly = TRUE)
@@ -65,7 +67,7 @@ for(city in cities){
 	tracts@data$area <- tracts@data$ALAND / 1000^2	
 	tracts <- tracts[tracts@data$total / tracts@data$area > 50,] # at least 50 people per km^2
 	
-	radius = 1/sqrt(85 * 111) * 1/2 # (roughly 1 km after lat-lon conversion)
+	radius = 1/sqrt(85 * 111) * resolution # (roughly 1 km after lat-lon conversion)
 	xx = spsample(tracts, type="hexagonal", cellsize=radius)
 	print(paste0(city, ': ',  nrow(tracts@data), ' tracts || ', length(xx), ' grid cells'))
 	xxpl = HexPoints2SpatialPolygons(xx)
@@ -75,7 +77,7 @@ for(city in cities){
 		window <- tracts[xxpl[i,],]@data[,c(races, 'total', 'area')]
 		window <- window / (window$area) # total becomes density
 		c(mean(window$total), 
-		  4 * mutual_info(window[,races]) / (1/2)^2,  
+		  4 * mutual_info(window[,races]) / resolution^2,  
 		  H(colSums(window[,races]) /sum(window[,races])), 
 		  nrow(window)) # returns estimated density and mutual info
 	}

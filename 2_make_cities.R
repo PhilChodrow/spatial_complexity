@@ -30,8 +30,6 @@ if(!dir.exists('data/cities')){
 }
 
 
-
-
 for(city in cities){
 	print(city)
 	city_info <- city_df %>%
