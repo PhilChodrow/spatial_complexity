@@ -497,7 +497,7 @@ sub_curves %>%
 	ggplot() +
 	geom_path(aes(x = nclust, y = I_XY, group = city, color = city)) +
 	scale_x_continuous(trans = 'log10', limit = c(1, NA)) +
-	scale_y_continuous(limit = c(0,.7)) +
+	scale_y_continuous(limit = c(0,max(sub_curves$I_XY))) +
 	theme_minimal() +
 	annotation_logticks(size = .1, sides = 'b', scaled = T) + 
 	geom_rect(data = rects, aes(xmin = xmin,
@@ -510,12 +510,12 @@ sub_curves %>%
 	# geom_text(aes(x = nclust, y = I_XY, label = city, hjust = -.2), data = end_points) + 
 	geom_polygon(aes(nclust, I_XY, fill = city), data = filled, alpha = .2) + 
 	geom_text(aes(x = 50, y = .2, label = paste('AUC = ', round(AUC,2))), data = sub_summary) + 
-	# geom_text(aes(x = 50, y = .1, label = paste('J(X,Y) = ', round(weighted_J,2))), data = sub_summary) +
+	geom_text(aes(x = 50, y = .1, label = paste('J(X,Y) = ', round(weighted_J,2))), data = sub_summary) +
 	facet_wrap(~city) + 
 	scale_fill_discrete(guide = F) + 
 	scale_color_discrete(guide = F) + 
 	xlab('Number of clusters') + 
-	ylab('I(X,Y)') + 
+	ylab('I(C,Y)') + 
 	ggtitle('AUC as Clustering Evaluation')
 
 
