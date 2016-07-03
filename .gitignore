@@ -3,3 +3,12 @@
 data/*
 throughput/*
 *.html
+*.aux
+*.fls
+*.log
+*.nav
+*.out
+*.snm
+*.gz
+*.fdb_latexmk
+*.toc
