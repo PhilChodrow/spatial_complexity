@@ -1,0 +1,86 @@
+\documentclass{beamer}
+\usepackage{import}
+
+\usetheme{metropolis}           % Use metropolis theme
+\title{Information Measures and...}
+\date{\today}
+\author{Phil Chodrow}
+\institute{MIT Human Mobility and Networks Laboratory \& Operations Research Center}
+
+% ---------------
+% ---------------
+\begin{document}
+	\maketitle
+	\section{Introduction: Neighborhoods, Segregation, Information Theory}
+
+		\begin{frame}{Why care about neighborhoods?}
+
+		\end{frame}
+
+		\begin{frame}{Three Dimensions of Spatial Diversity}
+			
+			\begin{description}
+				\item[Global diversity] is the extent to which different groups are equally represented in the city as a whole.  
+				\item[Spatial exposure] \textit{refers to the extent that members of one group encounter members of another group (or their own group, in the case of spatialisolation) in their local spatial environments.} \cite{Reardon2004} 
+				\item[Spatial evenness] \textit{or clustering, refers to the extent to which groups are similarly distributed in residential space.} \cite{Reardon2004}
+			\end{description}
+			
+			These concepts are distinct but hierarchical: 
+
+			No global diversity $\implies$ 
+
+			perfect evenness $\implies$ 
+
+			maximal exposure. 
+
+  		\end{frame}
+
+  		\begin{frame}{Albuquerque: (Relatively) Even}
+	  		\begin{figure}
+	  			\includegraphics[width=\textwidth]{external_figs/albuquerque_dot.png}
+	  			\caption{\textit{Image Copyright, 2013, Weldon Cooper Center for Public Service, Rector and Visitors of the University of Virginia (Dustin A. Cable, creator)}}
+	  		\end{figure}
+  		\end{frame}
+
+		\begin{frame}{Detroit: Uneven, Low Exposure}
+	  		\begin{figure}
+	  			\includegraphics[width=\textwidth]{external_figs/detroit_dot.png}
+	  			\caption{\textit{Image Copyright, 2013, Weldon Cooper Center for Public Service, Rector and Visitors of the University of Virginia (Dustin A. Cable, creator)}}
+	  		\end{figure}
+  		\end{frame}
+  		
+  		\begin{frame}{Philadelphia: Uneven, High Exposure}
+	  		\begin{figure}
+	  			\includegraphics[width=\textwidth]{external_figs/philly_dot.png}
+	  			\caption{\textit{Image Copyright, 2013, Weldon Cooper Center for Public Service, Rector and Visitors of the University of Virginia (Dustin A. Cable, creator)}}
+	  		\end{figure}
+  		\end{frame}
+
+  		\begin{frame}{Entropy as Global Diversity}
+  			Let $p(X,Y)$ be the joint distribution of location $X$ and race $Y$. The \textbf{entropy} is defined as 
+  			\begin{equation}
+  				H(X) \triangleq - \mathbb{E}_Y[\log(Y)] = -\sum_{y \in \mathcal{Y}} p(Y)\log p(Y)\;.
+  			\end{equation}
+  			\begin{itemize}
+  				\item More entropy $\implies$ more global diversity.
+  				\item $H(X) = 0 \implies$ monoracial city
+  				\item $H(X) = \log \left|X\right| \implies$ all races are represented equally.    
+  			\end{itemize} 
+  		\end{frame}
+
+  		\begin{frame}{Mutual Information as Evenness}
+  			The \textbf{mutual information} between the location $X$ and race $Y$ is defined as 	
+  			\begin{equation}
+  				I(X,Y) \triangleq \sum_{x,y \in \mathcal{X} \times \mathcal{Y}}p(X,Y) \log \frac{p(X,Y)}{p(X)p(Y)}\;.
+  			\end{equation}
+  			\begin{itemize}
+  				\item More information $\implies$ less evenness. 
+  				\item $I(X,Y) = 0$ implies that location and race are independent (like a correlation coefficient, but better!)
+  				\item $I(X,Y) = \log \max\{\left|X\right|,\left|Y\right|\}$ implies either location completely determines race (think Detroit) or race completely determines location. 
+  			\end{itemize}
+  			
+  		\end{frame}
+
+  		
+
+\end{document}

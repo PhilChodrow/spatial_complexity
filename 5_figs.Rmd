@@ -217,6 +217,15 @@ tab <- cache %>%
 
 tab %>% write_csv('figs/table.csv')
 
+tab %>% select(City, HY, IXY, J) %>% 
+	filter(City %in% c( 'Albuquerque', 'Detroit', 'Philadelphia')) %>% 
+	arrange(City) %>%
+	mutate(HY = sprintf("%.2f", HY),
+		   IXY = sprintf("%.2f", IXY),
+		   J = sprintf("%.2f", J)) %>% 
+	write_csv('figs/mini_table.csv')
+
+
 tab$Population <- format(tab$Population, big.mark=",", scientific=FALSE)
 tab$Area <- format(tab$Area, big.mark=",", scientific=FALSE)
 tab$Density <- format(tab$Density, big.mark=",", scientific=FALSE)
@@ -268,7 +277,7 @@ cluster_map <- function(city, nclusters = 10){
 		ggplot() +
 		geom_polygon(aes(x = long, y = lat, group = group, fill = factor(cluster))) + 
 		scale_fill_brewer(palette = 'Set3', name = NULL, guide = guide_legend(nrow = 1), labels = LETTERS[1:nclusters]) + 
-		ggtitle(paste0('Example clustering for ', city)) + 
+		# ggtitle(paste0('Example clustering for ', city)) + 
 		theme_minimal() +
 		theme(axis.ticks = element_blank(),
 			  axis.text = element_blank(),
@@ -281,7 +290,7 @@ cluster_map <- function(city, nclusters = 10){
 
 cluster_map('Detroit', nclusters = 6)
 
-ggsave('figs/example_cluster_map.png')
+ggsave('figs/example_cluster_map.png',  width = 8, height = 4)
 
 ```
 
@@ -308,7 +317,7 @@ make_cluster_groups <- function(city, nclusters = 10){
 		filter(sum(n) > .01) %>% 
 		ungroup() %>% 
 		spread(key = race, value = n, fill = 0) %>% 
-		arrange(desc(White)) %>% 
+		# arrange(desc(White)) %>% 
 		mutate(cluster = factor(LETTERS[1:nrow(.)])) %>%  
 		gather(key = race, value = p, -cluster) %>% 
 		mutate(city = city,
@@ -341,11 +350,30 @@ ggsave('figs/example_clusters.png')
 
 ```
 
+```{r}
+make_cluster_groups('Detroit', 6) %>% 
+	mutate(race = factor(race, levels = c('Other', 'Asian', 'Hispanic', 'Black', 'White'))) %>% 
+	ggplot(aes(y = race, x = cluster, fill = p)) + 
+	geom_tile(color = 'black') + 
+	geom_text(aes(
+		label = ifelse(p < 0.005, "", 100 * round(p,2)))) +
+	theme_minimal() + 
+	theme(axis.ticks.x = element_blank(),
+		  axis.title = element_blank(),
+		  legend.position="bottom",
+		  legend.title = element_blank()) +
+	scale_fill_continuous(low = 'white', high = 'steelblue', limits = c(0, NA), guide = FALSE) 
+	# ggtitle(paste0('Example clusters')) 
+
+ggsave('figs/example_clusters_detailed.png', width = 4, height = 2)
+
+```
+
 Follow up on Detroit by area (percent of area occupied by each cluster.)
 
 ```{r}
 city = 'Detroit'
-nclusters = 3
+nclusters = 6
 
 tracts <- readOGR(dsn = paste0('data/cities/',city), layer = 'geo', verbose = FALSE)
 tracts <- tracts[sum(tracts@data[,columns]) != 0,]
@@ -609,7 +637,8 @@ ggsave('figs/info_performance_adjed.png', width = 8, height = 4)
 ```{r}
 summary %>% mutate(AUC = adj_AUC / max(adj_AUC),
 		   `I(X,Y)` = I_XY / max(I_XY),
-		   `J(X,Y)` = weighted_J / max(weighted_J)) %>%
+		   `J(X,Y)` = weighted_J / max(weighted_J),
+		   `H(Y)` = H_Y / max(H_Y)) %>%
 	filter(I_XY > 0) %>%
 	lm(AUC ~ `I(X,Y)` + `J(X,Y)`, data = .) %>%
 	stargazer(flip = T, 

@@ -1,0 +1,21 @@
+
+% Table created by stargazer v.5.2 by Marek Hlavac, Harvard University. E-mail: hlavac at fas.harvard.edu
+% Date and time: Sun, Jul 03, 2016 - 11:47:30
+\begin{tabular}{@{\extracolsep{5pt}}lc} 
+\\[-1.8ex]\hline \\[-1.8ex] 
+\hline \\[-1.8ex] 
+\\[-1.8ex] & AUC \\ 
+ $I(X,Y)$ & $-$0.184$^{***}$ \\ 
+  & ($-$0.292, $-$0.075) \\ 
+  $J(X,Y)$ & 0.450$^{***}$ \\ 
+  & (0.374, 0.525) \\ 
+  Intercept & $-$0.147$^{***}$ \\ 
+  & ($-$0.239, $-$0.055) \\ 
+  Constant & 0.811$^{***}$ \\ 
+  & (0.733, 0.889) \\ 
+ Observations & 56 \\ 
+R$^{2}$ & 0.764 \\ 
+Adjusted R$^{2}$ & 0.750 \\ 
+Residual Std. Error & 0.040 (df = 52) \\ 
+F Statistic & 55.959$^{***}$ (df = 3; 52)  (p = 0.000) \\ 
+\end{tabular} 
