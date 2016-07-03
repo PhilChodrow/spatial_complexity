@@ -1,6 +1,5 @@
 %!TEX program = xelatex
 
-
 \documentclass{beamer}
 \usepackage{standalone}
 \usepackage{import}
@@ -12,6 +11,7 @@
 \usepackage{amsthm}
 \usepackage{amsfonts}
 \usepackage{amssymb}
+\usepackage{etoolbox}
 
 \usetheme{metropolis}
 \metroset{block=fill}
@@ -38,16 +38,30 @@
 % -------------------------------------------------------------------------------------------------
 
 \begin{document}
+
+% \def\short{1}
+
+\newif\iflong
+\ifdefined\short
+	\longfalse
+\else
+	\longtrue
+\fi
+
+
 \maketitle
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	\begin{frame}<handout:\included|beamer:\included>\frametitle{Table of contents}
-	  \setbeamertemplate{section in toc}[sections numbered]
-	  \tableofcontents[hideallsubsections]
-	\end{frame}
+	\iflong
+		\begin{frame}\frametitle{Table of contents}
+		  \setbeamertemplate{section in toc}[sections numbered]
+		  \tableofcontents[hideallsubsections]
+		\end{frame}
+	\fi
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Introduction}
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	
 	\begin{frame}\frametitle{Neighborhoods and Diversity}
 		Two questions for today: 
 		\stepcounter{beamerpauses}
@@ -61,6 +75,7 @@
 			\end{block}}
 			\note{This is a pretty damn testy note!}
 	\end{frame}
+
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	\begin{frame}\frametitle{Three Dimensions of Urban Diversity}
@@ -93,54 +108,64 @@
 		    }
 	    \end{figure}
 	    
-	    
 	\end{frame}
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	\iflong
 	\begin{frame}\frametitle{Albuquerque: Low diversity, fairly even, high exposure}
 		\begin{figure}
 			\includegraphics[width=\textwidth]{external_figs/albuquerque_dot.png}
 			\caption{\textit{Image Copyright, 2013, Weldon Cooper Center for Public Service, Rector and Visitors of the University of Virginia (Dustin A. Cable, creator)}}
 		\end{figure}
 	\end{frame}
+	\fi
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	\iflong
 	\begin{frame}\frametitle{Detroit: High diversity, highly uneven, low exposure}
 		\begin{figure}
 			\includegraphics[width=\textwidth]{external_figs/detroit_dot.png}
 			\caption{\textit{Image Copyright, 2013, Weldon Cooper Center for Public Service, Rector and Visitors of the University of Virginia (Dustin A. Cable, creator)}}
 		\end{figure}
 	\end{frame}
+	\fi
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	\iflong
 	\begin{frame}\frametitle{Philadelphia: High diversity, highly uneven, high exposure}
 		\begin{figure}
 			\includegraphics[width=\textwidth]{external_figs/philly_dot.png}
 			\caption{\textit{Image Copyright, 2013, Weldon Cooper Center for Public Service, Rector and Visitors of the University of Virginia (Dustin A. Cable, creator)}}
 		\end{figure}
 	\end{frame}
+	\fi
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Diversity and Information Theory}
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	\begin{frame}\frametitle{Why Information Theory?}
-		Information theory quantifies concepts like uncertainty and predictability. Why use it for studying race? 
-		\onslide<2->{
-			\begin{block}{Core Insight}
+	\iflong
+		\begin{frame}\frametitle{Why Information Theory?}
+			Information theory quantifies concepts like uncertainty and predictability. Why use it for studying race? 
+			\only<2->{
+				\begin{block}{Core Insight}
+					\begin{itemize}
+						\item Complex systems allow \textbf{some} prediction...
+						\item ...But good prediction is \textbf{hard}.
+					\end{itemize}
+				\end{block}
+			}
+			\onslide<3>{
+				\textbf{Examples of prediction:}
 				\begin{itemize}
-					\item Complex systems allow \textbf{some} prediction...
-					\item ...But good prediction is \textbf{hard}.
+					\item If you pick a random person from a city, is it hard to guess their race? ``Yes'' $\implies$ more diverse city. 
+					\item Does it help if you tell me where they live? ``Yes'' $\implies$ more uneven city. 
 				\end{itemize}
-			\end{block}
-		}
-		\onslide<3>{
-			\textbf{Examples of prediction:}
-			\begin{itemize}
-				\item If you pick a random person from a city, is it hard to guess their race? ``Yes'' $\implies$ more diverse city. 
-				\item Does it help if you tell me where they live? ``Yes'' $\implies$ more uneven city. 
-			\end{itemize}
-		}
-	\end{frame}
+			}
+		\end{frame}
+
+	\fi
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	
+	\iflong
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	\begin{frame}\frametitle{Entropy as Global Diversity}
 		Let $p(X,Y)$ be the joint distribution of location $X$ and race $Y$. The marginal distribution of race alone is $p(Y) = \sum_{x \in \mathcal{X}} p(x,Y)$. 
@@ -212,6 +237,36 @@
 		}
 	\end{frame}
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	\fi
+	\iflong
+		\longfalse
+	\else
+		\longtrue
+	\fi
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	\iflong
+	\begin{frame}\frametitle{Summary: Information Theory and Diversity}
+		\begin{block}{Entropy Measures Diversity}
+			$H(Y) \triangleq - \mathbb{E}_Y[\log p(Y)]$
+		\end{block}
+		\onslide<2->{
+			\begin{block}{Mutual Information Measures Evenness}	
+				$I(X,Y) \triangleq \mathbb{E}_{X,Y}\left[\log \frac{p(X,Y)}{p(X)p(Y)}\right]$
+			\end{block}
+		}
+		\onslide<3->{
+			\begin{block}{Mean Local Information Measures Exposure}
+				$J(X,Y) \triangleq \mathbb{E}_X [\text{trace } J_Y(X)]$
+			\end{block}	
+		}	
+	\end{frame}
+	\fi
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	\iflong
+		\longfalse
+	\else
+		\longtrue
+	\fi
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	\begin{frame}\frametitle{Back to the checkerboard}
 		\begin{figure}
@@ -254,6 +309,7 @@
 	\end{frame}
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	\iflong
 	\begin{frame}\frametitle{Urban Density and the Compression of Social Space}
 		\centering
 		\begin{figure}
@@ -261,12 +317,14 @@
 	    	\includegraphics[width=\textwidth]{figs/density_fisher.png}
 	    \end{figure}
 	\end{frame}
+	\fi
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Information-Theoretic Identification of Neighborhoods}
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	\iflong
 	\begin{frame}\frametitle{How can we use this?}
 		$H(Y)$, $I(X,Y)$, and $J(X,Y)$ measure diversity, evenness, and spatial exposure. 
 
@@ -283,7 +341,7 @@
 		}
 
 	\end{frame}
-
+	\fi
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	\begin{frame}[t]\frametitle{Key Property of Mutual Information}
@@ -330,9 +388,11 @@
 	\end{frame}
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	\iflong
 	\begin{frame}{Open Directions}
 		Let's learn about...
 	\end{frame}
+	\fi
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	\begin{frame}[standout]

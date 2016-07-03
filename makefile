@@ -45,8 +45,8 @@ outputs/paper.pdf: paper.tex 5_figs.html tex/*
 	mv paper.pdf outputs
 
 xl = xelatex -interaction=batchmode
-short_version = "\def\included{0} \input{slides.tex}"
-long_version = "\def\included{1} \input{slides.tex}"	
+short_version = "\def\short{1} \input{slides.tex}"
+long_version = "\input{slides.tex}"	
 
 outputs/pres_short.pdf: slides.tex 5_figs.html tex/* 
 	$(xl) $(short_version)
