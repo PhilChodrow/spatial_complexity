@@ -1,19 +1,17 @@
 # filesets
 
-_outputs = outputs/paper.pdf outputs/slides.pdf
-
+_outputs = outputs/paper.pdf outputs/pres_short.pdf outputs/pres_long.pdf
 
 # Building
 
 all: outputs
-
 outputs: $(_outputs)
 
 
 # Cleaning
 
 clean: # output
-	rm -rf outputs/paper.pdf 5_figs.html figs/*
+	rm -rf outputs/* 5_figs.html figs/*
 
 clean_throughput: 
 	rm -rf throughput/*
@@ -22,6 +20,7 @@ clean_data:
 	rm -rf data/*
 
 # Dependencies
+
 
 data/states/*: assumptions/cities.csv assumptions/lookup.csv 1_get_states.R
 	Rscript 1_get_states.R
@@ -39,21 +38,28 @@ throughput/loss_curves.csv: data/cities 4_cluster.R
 	Rscript -e 'rmarkdown::render("5_figs.rmd")'
 
 outputs/paper.pdf: paper.tex 5_figs.html tex/*
-	pdflatex -interaction=batchmode paper.tex 
+	$(xl) paper.tex 
 	bibtex paper
-	pdflatex -interaction=batchmode paper
-	pdflatex -interaction=batchmode paper
-	rm paper.bbl paper.blg paper.log paper.aux paper.fdb_latexmk paper.fls
+	$(xl) paper
+	$(xl) paper
 	mv paper.pdf outputs
 
-outputs/slides.pdf: slides.tex 5_figs.html tex/* 
-	xelatex -interaction=batchmode slides.tex 
-	bibtex slides
-	xelatex -interaction=batchmode slides
-	xelatex -interaction=batchmode slides
-	rm slides.bbl slides.blg slides.log slides.aux slides.out slides.snm slides.toc slides.nav slides.fls slides.fdb_latexmk
-	mv slides.pdf outputs
+xl = xelatex -interaction=batchmode
+short_version = "\def\included{0} \input{slides.tex}"
+long_version = "\def\included{1} \input{slides.tex}"	
 
-# Eventually include a file for rendering a slide deck in here too. 
+outputs/pres_short.pdf: slides.tex 5_figs.html tex/* 
+	$(xl) $(short_version)
+	bibtex slides
+	$(xl) $(short_version)
+	$(xl) $(short_version)
+	mv slides.pdf outputs/pres_short.pdf
+
+outputs/pres_long.pdf: slides.tex 5_figs.html tex/* 
+	$(xl) $(long_version)
+	bibtex slides
+	$(xl) $(long_version)
+	$(xl) $(long_version)
+	mv slides.pdf outputs/pres_long.pdf
 
 
