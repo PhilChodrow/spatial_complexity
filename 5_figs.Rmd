@@ -169,15 +169,17 @@ ggsave('figs/mutual_fisher.png', width = 8, height = 4)
 ## Relationship to population density
 ```{r}
 lm_eqn <- function(df){
-	m <- lm(weighted_J ~ log(density), data = df) 
-	eq <- substitute(italic(y) == a + b %.% ~'log' ~italic(rho)*","~~italic(r)^2~"="~r2, 
+	m <- lm(weighted_J ~ log(density) + I_XY, data = df) 
+	eq <- substitute(italic(y) == a + b %.% 'I(X,Y)' + c %.% ~'log' ~italic(rho)*","~~italic(r)^2~"="~r2, 
 					 list(a = format(coef(m)[1], digits = 2), 
 					 	 b = format(coef(m)[2], digits = 2), 
+					 	 c = format(coef(m)[3], digits = 2), 
 					 	 r2 = format(summary(m)$adj.r.squared, digits = 3)))
 	as.character(as.expression(eq))                 
 }
 
 cache %>% 
+	rename(`I(X,Y)` = I_XY) %>% 
 	# filter(!grepl('Los Angeles', city)) %>%
 	ggplot(aes(x = density, y = weighted_J)) +
 	geom_smooth(method = 'lm', se = FALSE, color = 'black', size = .4) +
@@ -640,15 +642,32 @@ summary %>% mutate(AUC = adj_AUC / max(adj_AUC),
 		   `J(X,Y)` = weighted_J / max(weighted_J),
 		   `H(Y)` = H_Y / max(H_Y)) %>%
 	filter(I_XY > 0) %>%
-	lm(AUC ~ `I(X,Y)` + `J(X,Y)`, data = .) %>%
+	lm(AUC ~ `H(Y)` + `I(X,Y)` + `J(X,Y)`, data = .) %>%
 	stargazer(flip = T, 
 			  # table.layout = '#tn', 
 			  style = 'all2',
-			  ci = T,covariate.labels = c('$I(X,Y)$','$J(X,Y)$', 'Intercept'),
-			  table.layout = '-=-!=!dtas',
+			  ci = T,covariate.labels = c('$H(Y)$', '$I(X,Y)$','$J(X,Y)$', 'Intercept'),
+			  # table.layout = '-=-!=!dtas',
 			  float = F) %>% 
 	write(file = 'figs/adjusted_regression.txt')
 ```
+
+```{r}
+
+summary %>% mutate(AUC = adj_AUC / max(adj_AUC),
+		   `I(X,Y)` = I_XY / max(I_XY),
+		   `J(X,Y)` = weighted_J / max(weighted_J),
+		   `H(Y)` = H_Y / max(H_Y),
+		   density = density / max(density)) %>%
+	lm(`J(X,Y)` ~ log(density) + `I(X,Y)`, data = .) %>% 
+	summary()
+
+
+
+
+```
+
+
 
 
 # Session info

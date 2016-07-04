@@ -1,5 +1,5 @@
 	
-\subsection{Information and the Checkerboard}
+\subsection*{Information and the Checkerboard}
 	We begin by developing two fundamental measures of information theory, the entropy of one random variable and the mutual information of two. Let $X$ be a spatial variable, such as a set of coordinates in space or a neighborhood name. Let $Y$ be a compositional variable that we aim to study, defined on an alphabet $\mathcal{Y}$. In the simple case in which $\mathcal{Y}  = \{\text{Black, White}\}$, Figure \ref{fig:toy} illustrates a range of possible joint distributions $p(X,Y)$. Comparing the completely undiverse city (a) and the spatially uniformly diverse (b) motivates the first fundamental information measure, the entropy:
 	\begin{equation}
 		H(Y) \triangleq -\E_Y[\log p(Y)] = - \sum_{y \in \mathcal{Y}} p(y) \log p(y)\;.
@@ -30,7 +30,7 @@
 		\label{fig:toy}
 		\end{figure}
 
-\subsection{Measuring Socio-Spatial Complexity}
+\subsection*{Measuring Socio-Spatial Complexity}
 
 	We will now derive a measure that solves the ``checkerboard problem'' by distinguishing the toy cities (c) and (d). To motivate our methods, we  consider an idealized scenario in which we have a differentiable field $p(y|x)$ of observed probability distributions for each $x \in M \subset \R^n$, where the metric space $M$ is interpretable as the ``map'' on which we work. 
 
@@ -57,26 +57,47 @@
 
 	We note that, since 
 	\begin{align}
-		\text{trace } J_Y(x) &=  \sum_i \E_Y\left[ \left(\frac{1}{p(Y|x)} \frac{\partial p(Y|x)}{\partial x_i}\right)\right]^2\;
+		\text{trace } J_Y(x) &= \E_Y\left[ \norm{\nabla_x \log p(Y|x)}^2 \right]\;
 	\end{align}
-	may be viewed as a weighted norm of the gradient $\nabla_x p(Y|x)$, the quantity 
+	may be viewed as the average norm of the gradient of $\log p(Y|x)$, the quantity  
 	\begin{align}
 		J(X,Y) &= \E_X[\text{trace } J_Y(X)] \\
-		&= \int_M \text{trace } J_Y(X) d\prob_X
+		&= \E_{X,Y}\left[\norm{\nabla_x \log p(Y|X)}^2\right]
 	\end{align}
-	may be viewed as a cousin to total variation measures often encountered in analysis. 
+	may be viewed as a cousin to total variation measures often encountered in mathematical analysis. 
 
-	The application of this methodology to a discrete data set is conceptually simple. For a given set of tracts, overlay an evenly spaced grid of radius $r$, and measure the mutual information $I_r(x)$ in each grid cell. Then, when data and grid resolutions are sufficiently high, $4I_r(x) / r^2$ approximates the quantity $\text{trace }J_Y(x)$, which can then be aggregated across the data set. We provide a more formal statement of this computation in the appendix. 
+	While we have developed these methods in the context of a differential field of observed distributions $p(y|x)$, their application to a discrete data set is conceptually simple. For a given set of tracts, overlay an evenly spaced grid of radius $r$, and measure the mutual information $I_r(x)$ in each grid cell. Then, when data and grid resolutions are sufficiently high, $4I_r(x) / r^2$ approximates the quantity $\text{trace }J_Y(x)$, which can then be aggregated across the data set. We provide a more formal statement of this computation in the appendix. 
 
-\subsection{Information Measures and Segregation Studies}
+\subsection*{Information Measures and Segregation Studies}
 
-	Considerable attention has been paid to relating segregation indices to intuitive concepts of diversity and segregation. We note here that the mutual information $I(X,Y)$ and mean local information $J(X,Y)$ correspond closely to the two dimensions of segregation formulated in \cite{Reardon2002}. The authors of \cite{Reardon2002} describe \emph{evenness} as ``the extent to which groups are similarly distributed in residential space'' (page 126), and \emph{exposure} as ``the extent that members of one group encounter members of another group...in their local spatial environments.'' The mutual information $I(X,Y)$ may be viewed as a measure of (lack of) evenness, since to say that groups are similarly distributed in residential space is to say that knowing a spatial location conveys little about the race of the people who live there. Large $I(X,Y)$ reflects highly uneven distributions of demographic groups. Complementarily, the mean local information $J(X,Y)$may be viewed as a measure of spatial exposure \emph{for a fixed level of} $I(X,Y)$, as is illustrated by cities (c) and (d) in \ref{fig:toy}. Though distinct, these dimensions are not independent. To see this, note that the most thorough kind of exposure is achieved when $I(X,Y) = J(X,Y) = 0$, as in city (b). Since the concept of exposure only applies in a city with spatial differences, $J(X,Y)$ must be considered jointly with $I(X,Y)$ as a measure of spatial exposure. 
+	Considerable attention has been paid to relating segregation indices to intuitive concepts of diversity and segregation. In this section, we relate the information measures $H(Y)$, $I(X,Y)$, and $J(X,Y)$ to three standard dimensions of diversity and segregation in sociology. In brief,
+	\begin{itemize}
+		\item The entropy $H(Y)$ measures global diversity. 
+		\item The mutual information $I(X,Y)$ measures \emph{evenness}. 
+		\item The local information $J(X,Y)$ measures \emph{spatial exposure}. 
+	\end{itemize}
+	We will define the latter two terms and argue for these claims below. In doing so, we make a case for these measures as practical tools in the quantitative study of urban diversity. 
 
-	There has also been much work showing the desirable properties of various segregation indicies. To give a brief sampling, indices should be invariant to changes in overall population size; they should decrease when populations ``even themselves out,'' and they should behave predictably under aggregation. Since we are presenting $I(X,Y)$ and $J(X,Y)$ as a suite of complementary information measures, we consider each in turn. The author of \cite{Roberto2015a} shows that the mutual information $I(X,Y)$ (which she calls the ``Divergence Index'') satisfies these and other desirable properties, generally as well or better than existing alternatives. We highlight one property of $I(X,Y)$ for special note, as this property will be central to our development of natural neighborhood identification. The principle of ``additive decomposability'' \cite{Reardon2002} stipulates that, when the data is grouped along either racial or spatial axes, a good segregation index should split into ``within group'' and ``between group'' components. In the context of the mutual information $I(X,Y)$, additive decomposability is simply the familiar chain rule of mutual information. For concreteness, let $C$ be a random variable giving the cluster label of location $X$; importantly, $C$ is completely determined by $X$. Then, the chain rule expresses additive decomposability as 
+	One way to quantify diversity is to consider how closely the distribution of races resembles the uniform distribution. A ``maximally diverse'' city might be 20\% each Asian, Black, Hispanic, Other, and White. The entropy measures distance from the uniform distribution, as can be formalized through the identity: 
+	\begin{equation}
+		H(Y) = \log \abs{\mathcal{Y}} - D[p(Y)\|u(Y)]
+	\end{equation}
+	where $u$ is the uniform distribution on $\mathcal{Y}$. The entropy is thus largest when the distribution $p(Y)$ is nearly uniform, and smallest when $p(Y)$ is ``farthest'' from the uniform distribution. Through properties of $D$, it is possible to show that these cases occur when $p(Y)$ is itself uniform and when $Y$ is a constant, respectively. Since entropy measures nearness to uniformity, it is an intuitive characterization of the idea of diversity. 
+
+	We now turn to the relationship between the mutual information $I(X,Y)$ and sociospatial evenness. The authors of \cite{Reardon2002} define \emph{spatial evenness} as ``the extent to which groups are similarly distributed in residential space'' (page 126), and argue that this concept encapsulates those of clustering, concentration, and centralization used in \cite{Massey1988}. To see that $I(X,Y)$ measures (un)evenness, consider the model cities (b) and (c) in Figure \ref{fig:toy}. In city (b), knowing where a person lives carries no information about their race, in the sense that, if you are attempting to guess someone's race, learning their residence will be of no help to you. In contrast, in city (c), location determines race: if you learn a person's residence, you can guess their race with 100\% accuracy. This difference is cast in information terms, but it is precisely the difference between evenness and unevenness. In (c), location epistemically determines race precisely because races are unevenly distributed across locations. 
+
+	Finally, we consider the local information $J(X,Y)$ and its connection to spatial exposure. The authors of \cite{Reardon2002} define \emph{spatial exposure} as ``the extent that members of one group encounter members of another group...in their local spatial environments'' (page 126). Our contention is that $J(X,Y)$ measures exposure conditional on a fixed level of evenness (as measured by $I(X,Y)$). To see this, consider cities (c) and (d) in Figure \ref{fig:toy}. These cities are equally diverse as measured by $H(Y)$ and equally uneven as measured by $I(X,Y)$. The difference between them is that (c) consists of two large, racially-distinct neighborhoods, of which only residents near the center are exposed to residents of the other. On the other hand, in (d), all residents are just one ``block'' away from residents who do not share their race. $J(X,Y)$ detects this difference because the localized mutual information $I_r$ in terms of which $J(X,Y)$ is defined is precisely the unevenness in a small area. We should emphasize, however, that $J(X,Y)$ should always be considered in the context of $I(X,Y)$. City (d) clearly has more exposure than (c), but less than the perfectly even (b). The difference is that (b) has no neighborhood structure at all. 
+
+	This point highlights that, though the concepts of diversity, evenness, and exposure are conceptually distinct, they are not fully independent. There exists a hierarchical relationship among them. Complete lack of diversity ($H(Y) = 0$) implies perfect evenness ($I(X,Y) = 0$), as in city (a). In turn, perfect evenness implies maximal exposure, but also a lack of neighborhood structure $J(X,Y)$, as in city (b). While this point may appear theoretical, it is necessary to keep in mind in the context of practical data analysis. Interpreting whether or not $I(X,Y)$ is ``high'' in a given city requires contextualizing its value against $H(Y)$. Similarly, evaluating a value of $J(X,Y)$ requires keeping $I(X,Y)$ in mind. 
+
+\subsection*{Desirable Properties of Information Measures}
+	How do these information measures There has also been much work showing the desirable properties of various segregation indicies. To give a brief sampling, indices should be invariant to changes in overall population size; they should decrease when populations ``even themselves out,'' and they should behave predictably under aggregation. Since we are presenting $I(X,Y)$ and $J(X,Y)$ as a suite of complementary information measures, we consider each in turn. The author of \cite{Roberto2015a} shows that the mutual information $I(X,Y)$ (which she calls the ``Divergence Index'') satisfies these and other desirable properties, generally as well or better than existing alternatives. We highlight one property of $I(X,Y)$ for special note, as this property will be central to our development of natural neighborhood identification. The principle of ``additive decomposability'' \cite{Reardon2002} stipulates that, when the data is grouped along either racial or spatial axes, a good segregation index should split into ``within group'' and ``between group'' components. In the context of the mutual information $I(X,Y)$, additive decomposability is simply the familiar chain rule of mutual information. For concreteness, let $C$ be a random variable giving the cluster label of location $X$; importantly, $C$ is completely determined by $X$. Then, the chain rule expresses additive decomposability as 
 	\begin{equation}
 		I(X,Y) = I(C,Y) + I(X,Y|C)\;; \label{eq:information_decomp}
 	\end{equation}
 	i.e. the information I have about $Y$ given that I know $X$ is equal to the information I have if I first learn the cluster $C$, plus the amount of additional information I gain if I subsequently learn the exact location $X$ as well. The first term is interpretable as the between-group information, while the second is interpretable as the within-group information. It is therefore comparable to various ``sum of squares'' decompositions that frequently appear in classical statistics. Indeed, it is possible to show that, when the differences between locations are small, the mutual information can be interpreted as a variance, in which case \eqref{eq:information_decomp} expresses the sum of squares composition directly. A similar version of the chain rule expresses additive decomposability for aggregation of racial groups rather than spatial locations. 
+
+\color{gray} % this section is very WIP. 
 
 	What of $J(X,Y)$? Below, we provide a brief overview of the properties of $J(X,Y)$. $J(X,Y)$ possesses a variety of intuitive properties, and those that it does not possess either underscore the importance of reading it in conjunction with $I(X,Y)$ or do not apply to explicitly spatial measures.  See \cite{Reardon2002,Reardon2004} for further discussion of these criteria. The mean local information $J(X,Y)$ satisfies: 
 	\begin{description}
@@ -95,8 +116,9 @@
 		\label{fig:decomposability}
 	\end{figure}
 	We have not exhausted the full complement of desiderata for segregation measures. However, many of the remaining ones -- such as composition invariance -- are either vague or controversial, and we will not consider further. 
+\color{black}
 
-\subsection{Identifying Natural Neighborhoods}
+\subsection*{Identifying Natural Neighborhoods}
 	
 	Equation \eqref{eq:information_decomp} motivates a simple scheme for identifying natural neighborhoods based on maximizing the between-group term $I(C,Y)$. If all I had access to were the cluster labels $C$ and not the locations $X$, then the information I had about $Y$would be $I(C,Y)$. A ``good'' clustering therefore maximizes the between-cluster information $I(Y,C)$, which entails minimizing the within-cluster information $I(X,Y|C)$. Solving this problem exactly is a challenging discrete optimization problem, and may not be computationally tractable. We can, however, construct a greedy algorithm which leads to satisfactory results. Suppose that we face the problem of choosing a pair of tracts $\{i*,j*\}$ to cluster together. The reduction in information associated with aggregating the locations $I$ into a single cluster is 
 	\begin{align}
@@ -105,7 +127,7 @@
 	\end{align}
 	where $p(Y) = \sum_{x} p(x,Y)$ is the global marginal distribution. the first term is the information associated with the two separate tracts, while the second is the information associated with a merged tract. Equation \eqref{eq:info_dist} defines a natural information distance between locations $i$ and $j$. Like the KL divergence, this distance is strictly nonnegative; unlike the KL divergence, it is symmetric, and defines an axiomatic metric on the space of tracts. Importantly, we can therefore use the distance $d(i,j)$ as a dissimilarity measure for the purposes of clustering. Our greedy procedure is simple: at each iteration, determine
 	\begin{equation}
-		(i^*,j^*) = \argmin_{i \text{neighbors} j} d(i,j),
+		(i^*,j^*) = \argmin_{i \text{ neighbors } j} d(i,j),
 	\end{equation}
 	and then combine $i^*$ amd $j^*$ into a single tract, repeating until only one cluster remains. This procedure defines a form of agglomerative hierarchical clustering distinguished by two characteristics: its spatial constraints and its pursuit of minimal information loss at each step. As a greedy algorith, it possesses no guarantees for optimal solutions, but in practice its performance leads to intuitive, racially-coherent regions. It thereby enables a study of spatial difference using non-arbitrarily-defined regions. 
 

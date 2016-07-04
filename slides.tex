@@ -12,6 +12,7 @@
 \usepackage{amsfonts}
 \usepackage{amssymb}
 \usepackage{etoolbox}
+\usepackage{hyperref}
 
 \usetheme{metropolis}
 \metroset{block=fill}
@@ -26,10 +27,10 @@
 }
 \makeatother
 
-\title{Neighborhoods and Segregation: An Information-Theoretic Lens}
+\title{Urban Diversity Through an Information-Theoretic Lens}
 \date{\today}
 \author{Phil Chodrow}
-\institute{MIT Human Mobility and Networks Laboratory \& Operations Research Center}
+\institute{MIT Human Mobility and Networks Laboratory \alert| Operations Research Center}
 
 % \includeonly{tex/slides/intro} will want this later. 
 
@@ -52,7 +53,7 @@
 \maketitle
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	\iflong
-		\begin{frame}\frametitle{Table of contents}
+		\begin{frame}\frametitle{Outline}
 		  \setbeamertemplate{section in toc}[sections numbered]
 		  \tableofcontents[hideallsubsections]
 		\end{frame}
@@ -66,8 +67,8 @@
 		Two questions for today: 
 		\stepcounter{beamerpauses}
 		\begin{enumerate}[<+ ->]
-			\item What is \alert<2>{\textbf{urban diversity}}, and how should we measure it? 
-			\item What is a \alert<3>{\textbf{neighborhood}}, and how can we distinguish neighborhoods in principled ways?
+			\item What is \alert<2>{\textbf{urban diversity}}, and can we measure it in spatially-aware ways? 
+			\item What are \alert<3>{\textbf{neighborhoods}}, and how can we distinguish neighborhoods from each other?
 		\end{enumerate}
 		\onslide<4->{
 			\begin{block}{Central Claim}
@@ -144,8 +145,8 @@
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	\iflong
 		\begin{frame}\frametitle{Why Information Theory?}
-			Information theory quantifies concepts like uncertainty and predictability. Why use it for studying race? 
-			\only<2->{
+			Information theory quantifies concepts like uncertainty and predictability. Why use it for studying diversity? 
+			\onslide<2->{
 				\begin{block}{Core Insight}
 					\begin{itemize}
 						\item Complex systems allow \textbf{some} prediction...
@@ -178,26 +179,25 @@
 			H(Y) = 0 &\implies \text{ city is monoracial} \\
 			H(Y) = \log \left|\mathcal{Y}\right| &\implies \text{ all races are represented equally}
 		\end{align*}}
-		\onslide<3->{\textbf{Entropy measures global diversity:} more entropy, more diversity.}
 	\end{frame}
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	\begin{frame}\frametitle{Mutual Information as Evenness}
 		The mutual information quantifies the degree of dependence between two random variables.
 		\begin{block}{Mutual Information}
-			\begin{equation*}
-			I(X,Y) \triangleq \sum_{x,y \in \mathcal{X} \times \mathcal{Y}}p(X,Y) \log \frac{p(X,Y)}{p(X)p(Y)}\;.
-		\end{equation*}	
+			\begin{align*}
+				I(X,Y) &\triangleq \mathbb{E}_{X,Y}\left[\log \frac{p(X,Y)}{p(X)p(Y)}\right] \\
+				&= \int_{\mathbb{R}^n} \; d^nx  \sum_{y \in \mathcal{Y}} p(x,Y) \log \frac{p(x,Y)}{p(x)p(Y)}\;.
+			\end{align*}	
 		\end{block}
 		\onslide<2->{\begin{align*}
 			I(X,Y) = 0 &\implies \text{ location and race are independent} \\
 			I(X,Y) = \log \left|Y\right| &\implies \text{ location determines race}
 		\end{align*}}
-		\onslide<3->{\textbf{Mutual information measures evenness:} more information, the more uneven the spatial distribution of demographics.}
 	\end{frame}
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	\begin{frame}\frametitle{Local Information}
+	\begin{frame}\frametitle{Spatializing Mutual Information}
 		Let $I_r(x_0)$ be local the mutual information between $X$ and $Y$, restricted to a small area of radius $r$ centered at $x_0$. Think of this as the \textbf{spatial variation of racial trends in a small area.} 
 		\onslide<2->{
 			\begin{block}{Theorem}
@@ -209,7 +209,7 @@
 			\end{block}
 		}
 		\onslide<3->{
-			\alert{Significance}: the local information $I_r(x_0)$ is related to an intrinsic statistical measure $J_Y(x)$ \emph{that is independent of the resolution $r$}.
+			\alert{Significance}: the local information $I_r(x_0)$ is related to an intrinsic statistical measure $J_Y(x)$ \emph{that is independent of the spatial resolution $r$}.
 		} 
 
 	\end{frame}
@@ -306,6 +306,9 @@
 	    	\centering
 	    	\includegraphics[width=\textwidth]{figs/mutual_fisher.png}
 	    \end{figure}
+	    \begin{itemize}
+	    	\item Philadelphia has greater exposure / more neighborhood structure than Detroit. 
+	    \end{itemize}
 	\end{frame}
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -316,26 +319,31 @@
 	    	\centering
 	    	\includegraphics[width=\textwidth]{figs/density_fisher.png}
 	    \end{figure}
+	    
+	    \begin{itemize}
+		    \item Denser cities have higher exposure and more neighborhood structure
+	    \end{itemize}
+
 	\end{frame}
 	\fi
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Information-Theoretic Identification of Neighborhoods}
+\section{Identifying Natural Neighborhoods}
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	\iflong
 	\begin{frame}\frametitle{How can we use this?}
 		$H(Y)$, $I(X,Y)$, and $J(X,Y)$ measure diversity, evenness, and spatial exposure. 
 
-		$J(X,Y)$ also measures ``neighborhoodiness.''
+		Also, spatial exposure is equivalent to neighborhood structure. 
 		
-		\onslide<2->{Does can we use these measures to \textbf{find} neighborhoods?}
+		\onslide<2->{So, can we use these measures to \textbf{find} neighborhoods?}
 
-		\onslide<3->{Yes! 
+		\onslide<3->{\textbf{Yes!}
 			\begin{itemize}
 				\item We can use $I(X,Y)$ to find neighborhoods
-				\item We can use $I(X,Y)$ and $J(X,Y)$ to estimate how many we need to preserve key patterns. 
+				\item We can use $H(Y)$, $I(X,Y)$, and $J(X,Y)$ to estimate how neighborhoods many we need to preserve key patterns. 
 				\item So, we can view $H(Y)$, $I(X,Y)$, and $J(X,Y)$ as measurements of \textbf{complexity} in spatiosocial structure. 
 			\end{itemize} 
 		}
@@ -360,47 +368,80 @@
 	\end{frame}
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	\begin{frame}[t]\frametitle{Neighborhoods in Detroit}
+	\begin{frame}[t]\frametitle{Practical Example: Racial Neighborhoods in Detroit}
 	    \begin{figure}
 	    	\centering
 	    	\includegraphics[width=.8\textwidth]{figs/example_cluster_map.png}
-
-	    	\includegraphics[width=.6\textwidth]{figs/example_clusters_detailed.png}
+		\begin{columns}
+			\begin{column}{0.6\textwidth}
+				\includegraphics[width=\textwidth]{figs/example_clusters_detailed.png}
+			\end{column}
+			\begin{column}{0.3\textwidth}  
+			     \emph{Percentage of population by race and neighborhood.}
+			\end{column}
+		\end{columns}
 	    \end{figure}
-	\end{frame}
-	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	\begin{frame}[t]\frametitle{Information Measures and ``Clusterability''}
-	    We would expect that cities with low spatial exposure $J(X,Y)$ are ``easy'' to cluster. Evaluate using ``Area Under the Curve'':
-
-	    \begin{figure}
-	    	\centering
-	    	\includegraphics[width=.8\textwidth]{figs/AUC_illustration.png}
-	    \end{figure}
-	    Together, $H(Y)$, $I(X,Y)$ and $J(X,Y)$ explain 75\% of the variability in the clusterability (AUC) of cities. 
-	\end{frame}
-	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Wrapping Up}
-	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	\begin{frame}{Learnings}
-		Information theory provides a natural language for the conceptualization and measurement of sociospatial variability. 
-
 	\end{frame}
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	\iflong
-	\begin{frame}{Open Directions}
-		Let's learn about...
+	\begin{frame}[t]\frametitle{Information Measures and ``Clusterability''}
+	    Evaluate clusterings using ``Area Under the Curve'':
+	    \begin{figure}
+	    	\centering
+	    	\includegraphics[width=.8\textwidth]{figs/AUC_illustration.png}
+	    \end{figure}
+	    Together, $H(Y)$, $I(X,Y)$ and $J(X,Y)$ explain 75\% of the variability in the clusterability (AUC) of cities -- they measure neighborhood structure.  
+	\end{frame}
+	\fi
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Wrapping Up}
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	\begin{frame}{Generality and future work}
+	
+		\begin{itemize}
+			\item \textbf{Other demographics}: education level, income, occupation type, etc.
+			\item \textbf{Other dimensions}: time
+				\begin{itemize}
+					\item Evolution of urban demographics (timescale: decades)
+					\item Dynamics of diversity in daily mobility (timescale: minutes)
+				\end{itemize}
+		\end{itemize}
+	\vspace{5mm}
+		\begin{columns}
+			\begin{column}{0.3\textwidth}
+				\includegraphics[height=100pt]{external_figs/fig_od_cropped.png}
+			\end{column}
+			\begin{column}{0.4\textwidth}  
+			     Daily commuting flows in Riyad, Saudi Arabia. \emph{Image credit: Shan Jiang and MIT HuMNetLab}
+			\end{column}
+		\end{columns}
+	\end{frame}
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	\begin{frame}{Download our tools!}
+		\begin{block}{R Package for Information-Theoretic Analysis}
+			\url{https://github.com/PhilChodrow/compx}
+		\end{block}
+		\begin{block}{This project: analysis and presentations}
+			\url{https://github.com/PhilChodrow/spatial_complexity}
+		\end{block}
+	\end{frame}
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	\iflong
+	\begin{frame}{Recap}
+		Information theory offers:
+		\begin{itemize}
+			\item A \textbf{unified mathematical approach} to traditional concerns in segregation studies
+			\item A \textbf{practical toolbox} for applied analysis of spatio-social trends
+			\item A \textbf{theoretical platform} for formulating and asking new questions about human difference in space and time. 
+		\end{itemize}
 	\end{frame}
 	\fi
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	\begin{frame}[standout]
-		Thank you! 
-
-		Questions? 
-
-		Feedback? 
+		THANK YOU! 
+		Questions? Feedback? 
 	\end{frame}
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -409,15 +450,17 @@
 % APPENDIX
 % -------------------------------------------------------------------------------------------------
 \appendix
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Supplementary Materials}
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	\nocite{RCoreTeam2016,Bettencourt2015,Bivand2014a,Bivand2014b,Bivand2014,Cover1991,Csiszzr2004,Lee2008,Massey1988,Reardon2002,Reardon2004}
+
 
 	\begin{frame}[allowframebreaks]{References}
-	    
-	    \bibliographystyle{plain}
-	    \bibliography{/Users/phil/bibs/library.bib}
-	    
+		    \bibliographystyle{plain}
+		    \bibliography{/Users/phil/bibs/library.bib}
 	\end{frame}
 
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -461,7 +504,7 @@
 			Exchanges & NA & \textcolor{mLightGreen}{\CheckmarkBold} & \textcolor{mLightGreen}{\CheckmarkBold}
 		\end{tabular}
 
-		* In the full paper, we argue that \cite{Reardon2004}'s version is not a workable criterion for spatial measures. 
+		* We contend that \cite{Reardon2004}'s version is not a workable criterion for explicitly spatial measures. 
 
 		\textcolor{mLightBrown}{\CheckmarkBold} In the theoretical definition; in practice we are reliant on the data as it is provided. 
 
@@ -472,6 +515,7 @@
 	    \begin{figure}
 	    	\centering
 	    	\includegraphics[width=\textwidth]{figs/example_clusters.png}
+	    	
 	    \end{figure}
 	\end{frame}
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

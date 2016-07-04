@@ -1,4 +1,28 @@
 
+\subsection*{Software} 
+
+  We are pleased to make available two software repositories accompanying this analysis. 
+  \begin{itemize}
+    \item Package 
+    \texttt{compx} for the \texttt{R} programming language implements computation of the information measures $H(Y)$, $I(X,Y)$, and $J(X,Y)$, as well as a method for information-theoretic clustering. Access \texttt{compx} at 
+    \begin{displayquote}
+      \texttt{https://github.com/PhilChodrow/compx}. 
+    \end{displayquote}
+    To install in \texttt{R}, install the package \texttt{devtools} at 
+    \begin{displayquote}
+    \texttt{https://cran.r-project.org/web/packages/devtools/index.html}
+    \end{displayquote}
+     and run the command 
+    \begin{displayquote}
+      \texttt{devtools::install\_github(``PhilChodrow/compx'')}
+    \end{displayquote}
+    in the \texttt{R} console. 
+    \item The analysis repository for this project, including data acquisition and processing; core computations; and figure generation. We hope that this repository will provide useful examples of how to use \texttt{compx} for others aiming to replicate and extend our results. Download the project files at 
+    \begin{displayquote}
+      \texttt{https://github.com/PhilChodrow/spatial\_complexity}. 
+    \end{displayquote}
+  \end{itemize}
+
 \subsection*{Relation of mutual and Fisher informations}
 	Let $X$ be a continuous random variable taking values in $\R^n$, and let $Y$ be a discrete random variable define on finite alphabet $\mathcal{Y}$. Suppose further that $p(y|x) > 0$ and that $p(y|x)$ is differentiable as a function of $x$ for all $x,y \in \R^n \times \mathcal{Y}$. Fix $x_0 \in \R^n$, and define $B_r \triangleq B_r(x_0) = \{ x \in R^n \;|\; \norm{x - x_0} \leq r \}$. Additionally, define the \emph{local mutual information} in $B_r$ as the mutual information between $X$ and $Y$ where $X$ is restricted to $B_r$:
 	\begin{align}
@@ -151,7 +175,7 @@
 	\begin{equation}
 		I(k) = \sum_{i \in N_k} p^k_I(i) D[p^i_Y(\cdot) \| p^k_Y(\cdot)]\;. 
 	\end{equation}
-	Using \eqref{approx}, the estimated Fisher information is 
+	Using \eqref{eq:approx}, the estimated Fisher information is 
 	\begin{equation}
 		J(k) \approx \frac{4 I(k)}{r^2}
 	\end{equation}
