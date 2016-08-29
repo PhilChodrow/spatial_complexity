@@ -1,36 +1,12 @@
 %!TEX program = xelatex
 
 \documentclass{beamer}
-\usepackage{standalone}
-\usepackage{import}
-\usepackage{csquotes}
-\usepackage{appendixnumberbeamer}
-\usepackage{csvsimple}
-\usepackage{bbding}
-\usepackage{amsmath}
-\usepackage{amsthm}
-\usepackage{amsfonts}
-\usepackage{amssymb}
-\usepackage{etoolbox}
-\usepackage{hyperref}
-
-\usetheme{metropolis}
-\metroset{block=fill}
-\metroset{progressbar=frametitle}
-\setbeamertemplate{bibliography item}{}
-\setbeamertemplate{caption}{\raggedright\insertcaption\par}
-
-\makeatletter
-\def\beamer@framenotesbegin{% at beginning of slide
-  \gdef\beamer@noteitems{}%
-  \gdef\beamer@notes{{}}% used to be totally empty.
-}
-\makeatother
+\usepackage{pc_slides}
 
 \title{Urban Diversity Through an Information-Theoretic Lens}
 \date{\today}
 \author{Phil Chodrow}
-\institute{MIT Human Mobility and Networks Laboratory \alert| Operations Research Center}
+\institute{MIT Human Mobility and Networks Laboratory \alert|\alert| Operations Research Center}
 
 % \includeonly{tex/slides/intro} will want this later. 
 
