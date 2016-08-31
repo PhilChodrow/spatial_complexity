@@ -94,16 +94,16 @@ method_illustration <- function(city, vmax){
 
 
 
-first <- method_illustration('Detroit', vmax = 6)
-second <- method_illustration('Philadelphia', vmax = 6)
-
-gA <- ggplotGrob(first)
-gB <- ggplotGrob(second)
-g <- gridExtra::cbind.gtable(gA, gB, size = "max")
-
-grid.draw(g)
-
-ggsave('figs/method_illustration.png', g, width = 8, height = 5)
+# first <- method_illustration('Detroit', vmax = 6)
+# second <- method_illustration('Philadelphia', vmax = 6)
+# 
+# gA <- ggplotGrob(first)
+# gB <- ggplotGrob(second)
+# g <- gridExtra::cbind.gtable(gA, gB, size = "max")
+# 
+# grid.draw(g)
+# 
+# ggsave('figs/method_illustration.png', g, width = 8, height = 5)
 
 ```
 
@@ -642,7 +642,7 @@ summary %>% mutate(AUC = adj_AUC / max(adj_AUC),
 		   `J(X,Y)` = weighted_J / max(weighted_J),
 		   `H(Y)` = H_Y / max(H_Y)) %>%
 	filter(I_XY > 0) %>%
-	lm(AUC ~ `H(Y)` + `I(X,Y)` + `J(X,Y)`, data = .) %>%
+	lm(AUC ~ `H(Y)` + `I(X,Y)` + `J(X,Y)`, data = .) %>% 
 	stargazer(flip = T, 
 			  # table.layout = '#tn', 
 			  style = 'all2',
@@ -651,6 +651,9 @@ summary %>% mutate(AUC = adj_AUC / max(adj_AUC),
 			  float = F) %>% 
 	write(file = 'figs/adjusted_regression.txt')
 ```
+
+
+
 
 ```{r}
 

@@ -217,15 +217,35 @@
 \subsection*{Computation of Local Information}
 	In this section, we provide a specification of the computational procedure used to estimate $J(X,Y) = \E_x[\text{trace } J_Y(X)]$ using blockgroup level data from the U.S. Census. For each fixed Census blockgroup $i$, let $P_i$ be the population, $A_i$ be the area, $\rho_i = P_i / A_i$ be the population density, and $p^i(y)$ be the observed proportion of racial group $y$. 
 
-	Over the map we impose a hexagonal grid of radius $r$ (see \ref{fig:method} for an example). For each hex $k$ in the grid, let $N_k$ be the set of Census blockgroups overlapping $k$. Define $p^{k}(i) = \rho_i / \sum_{i \in N_k} \rho_i$ as the estimated proportion of population within hex $k$ residing in blockgroup $i$. Defining $p^k(i)$ this way reflects a simplifying assumption that each blockgroup in $N_k$ overlaps hex $k$ with equal area. Finally, define the estimated overall racial composition of hex $k$ through the formula $p^k_Y(y) = \sum_{i \in N_k} p^{k}_I(i) p^i_Y(y)$. The mutual information in hex $k$ is then: 
+	Over the map we impose a hexagonal grid of radius $r$ (see \ref{fig:method} for an example). For each hex $k$ in the grid, let $N_k$ be the set of Census blockgroups overlapping $k$. Define $p^{k}(i) = \rho_i / \sum_{i \in N_k} \rho_i$ as the estimated proportion of population within hex $k$ residing in blockgroup $i$. Defining $p^k(i)$ this way reflects a simplifying assumption that each blockgroup in $N_k$ overlaps hex $k$ with equal area. Finally, define the estimated overall racial composition of hex $k$ through the formula $p^k(y) = \sum_{i \in N_k} p^{k}(i) p^i(y)$. The mutual information in hex $k$ is then: 
 	\begin{equation}
 		I(k) = \sum_{i \in N_k} p^k(i) D[p^i \| p^k]\;. 
 	\end{equation}
 	Using \eqref{eq:approx}, the estimated Fisher information at the centroid of hex $k$ is 
 	\begin{equation}
-		\text{trace } J_Y(k) \approx \frac{4 I(k)}{r^2}\;.
+		\text{trace } J_Y(k) \approx \frac{4 I(k)}{r^2} \triangleq J(k)\;.
 	\end{equation}
 	The estimated population in hex $k$ is $P_k = A^k\sum_{i \in N_k} \rho_i$, where $A^k$ is the cell area. We finally compute $\E_X[\text{trace} J_Y(X)]$ as 
 	\begin{equation}
 		J(X,Y) = \E_X[\text{trace }J_Y(X)] \approx \frac{1}{\sum_k P_k} \sum_k P_k J(k)
 	\end{equation}
+
+% \subsection*{Proof that $J(X,Y)$ Satisfies the Transfer Principle}
+
+% 	As above, we consider the formula for $J(X,Y)$ in computational practice as 
+% 	\begin{equation} 
+% 		J(X,Y) \approx  \frac{1}{\sum_k P_k} \sum_k P_k J(k) = \frac{4}{r^2T} \sum_k P_k I(k), \label{comp}
+% 	\end{equation}
+% 	where we have defined $T$ as the total population, and where $k$ indexes the grid cells. 
+
+% 	Suppose that we transfer an individual of race $y$ from blockgroup $i$ to blockgroup $j$ such that the following relation holds: 
+% 	\begin{equation}
+% 		p(y|X = i') \geq p(y|X = j')
+% 	\end{equation}
+% 	for all blockgroups $i'$ within radius $r$ of $i$ and all blockgroups $j'$ within radius $r$ of $j$. The transfer principle states that, in this case, $J'(X,Y) < J(X,Y)$, where $J'(X,Y)$ is the local information post-transfer. Using \eqref{comp}, it suffices to show that 
+
+% 	\begin{equation}
+% 		(P_k + 1) I'(k) + (P_\ell - 1) I'(\ell) < P_k I(k) + P_\ell I(\ell),
+% 	\end{equation}
+% 	where $I'(k)$ is the mutual information in hex $k$ post-transfer, for any grid cells $k$ overlapping $i$ and $\ell$ overlapping $j$. 
+

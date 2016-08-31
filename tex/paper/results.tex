@@ -32,8 +32,6 @@
 
 	Intriguingly, the mean local variability $J(X,Y)$ appears obey a scaling relation with respect to urban density. In Figure \ref{fig:density}, we plot $J(X,Y)$ against the population density $\rho$ of our studied cities. It appears that $J(X,Y)$ grows linearly with the logarithm of density. We interpret this trend as reflecting a compression of social space in dense urban areas: the same structure of racial variability fits into much less geographical area in New York than in Phoenix. One aspect of diversity in large, dense cities is that one need walk much less distance in order to reach a neighborhood with substantially different racial trends than one's own. It may be of interest for later studies to consider why this trend might arise through dynamical processes of urban formation. 
 	 
-		
-
 \subsection*{Learning From Natural Neighborhoods}
 
 	Figure \ref{fig:cluster_map} shows an illustrative clustering of Wayne County (housing the city of Detroit) into six regions using the greedy information maximization procedure defined by equation \eqref{eq:info_dist}. The procedure cleanly divides the city into racially coherent zones. Cluster A is predominantly white and B predominantly black, demarcating the major racial divide in the city. Cluster C is a small transitional zone in which the two races overlap. Clusters D and E are the demographically distinct independent cities of Hamtramck and Grosse Pointe, respectively, while Cluster F is a Hispanic community known as Mexicantown. The existence of clusters like C reflects that not every racially coherent tract is interpretable as a ``neighborhood''; some may be more naturally thought as transitions between neighborhoods. 
@@ -69,7 +67,15 @@
 		\label{fig:AUC}
 	\end{figure}
 
-	Figure \ref{fig:AUC} also shows the bounding rectangle, whose top right corner is defined by the number N of tracts in the census data set and the full mutual information $I(X,Y)$. The AUC is defined as the ratio of the shaded area in Figure \ref{fig:AUC} to the bounding rectangle. An AUC of 1 indicates that just one region carries full information; this can only occur in a city with no spatial variation, such as city (b) in \ref{fig:toy}. A larger AUC indicates that sample models with few regions capture more information about spatial variation in the city. In Detroit, there exists a clear dividing line between a predominantly white region on the west and a predominantly black region in the east. A two-cluster model therefore captures much of the information in the city, giving a high AUC of 0.74. In Boston, on the other hand, no such clear divide exists, and more complex models are necessary to capture similar amounts of information. Thus, Boston has a lower AUC of 0.67. 
+	Figure \ref{fig:AUC} also shows the bounding rectangle, whose top right corner is defined by the number N of tracts in the census data set and the full mutual information $I(X,Y)$. The AUC is defined as the ratio of the shaded area in Figure \ref{fig:AUC} to the bounding rectangle, and is computed via the formula 
+
+	\begin{equation}
+		A = \frac{1}{I(X,Y) \log N }\sum_{n = 1}^N I(C_n, Y) \log \frac{n + 1}{n}  ,
+	\end{equation}
+
+	where $N$ is the total number of Census blockgroups and $C_n$ is the cluster label at the level in which $n$ total clusters are defined.
+
+	When $A = 1$, it must hold that $I(C_1,Y) = I(X,Y)$. This implies that just one region carries full information; this can only occur in a city with no spatial unevenness, such as city (b) in \ref{fig:toy}. More generally, a large AUC indicates that simple models with few distinct regions capture much of the information about spatial variation in the city. In Atlanta, there exists a clear dividing line between a predominantly white region in the north and a predominantly black region in the south. A two-cluster model therefore captures much of the information in the city, giving a high AUC of 0.71. In Boston, on the other hand, no such clear divide exists, and more complex models are necessary to capture similar amounts of information. Thus, Boston has a lower AUC of 0.65. 
 
 	\begin{figure}
 		\centering
@@ -80,4 +86,4 @@
 		\label{fig:info_and_clusters}
 	\end{figure}		
 
-	Based on our discussion so far, we would expect that the AUC is related to the information measure $J(X,Y)$. Figure \ref{fig:info_and_clusters} confirms this expectation. Overall, two factors explain much about the ``clusterability'' of a city as measured by the AUC. The most important factor is the overall mutual information $I(X,Y)$. This reflects a simple intuition: when there is little spatial variation, there is not much to cluster. The second factor is the mean local information $J(X,Y)$, reflecting that spatial complexity makes clustering harder. A simple linear regression makes these insights precise. As predictors of the AUC, both $I(X,Y)$ and $J(X,Y)$ are highly significant, and the coefficient of $J(X,Y)$ is negative. The two measures jointly account for an adjusted 70\% of the variation in AUC. 
+	We argued previously that $H(Y)$, $I(X,Y)$, and $J(X,Y)$ provide a multi-dimensional characterization of spatial diversity in a city. Based on this discussion, we would expect that the performance of our clustering algorithm, as measured by the AUC, is closely related to these measures. Figure \ref{fig:info_and_clusters} confirms this expectation using simple linear regression of the AUC on the three measures. Overall, these three information measures explain approximately an adjusted 75\% of the ``clusterability'' of cities. The signs associated with $I(X,Y)$ and $J(X,Y)$are suggestive: it is easiest to identify natural neighborhoods when there is substantial spatial variation (high $I(X,Y)$) but relatively simple local structure (low $J(X,Y)$). 

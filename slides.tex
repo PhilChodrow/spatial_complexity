@@ -8,8 +8,6 @@
 \author{Phil Chodrow}
 \institute{MIT Human Mobility and Networks Laboratory \alert|\alert| Operations Research Center}
 
-% \includeonly{tex/slides/intro} will want this later. 
-
 % -------------------------------------------------------------------------------------------------
 % -------------------------------------------------------------------------------------------------
 % -------------------------------------------------------------------------------------------------
@@ -88,34 +86,34 @@
 	\end{frame}
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	\iflong
+
 	\begin{frame}\frametitle{Albuquerque: Low diversity, fairly even, high exposure}
 		\begin{figure}
 			\includegraphics[width=\textwidth]{external_figs/albuquerque_dot.png}
 			\caption{\textit{Image Copyright, 2013, Weldon Cooper Center for Public Service, Rector and Visitors of the University of Virginia (Dustin A. Cable, creator)}}
 		\end{figure}
 	\end{frame}
-	\fi
+
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	\iflong
+
 	\begin{frame}\frametitle{Detroit: High diversity, highly uneven, low exposure}
 		\begin{figure}
 			\includegraphics[width=\textwidth]{external_figs/detroit_dot.png}
 			\caption{\textit{Image Copyright, 2013, Weldon Cooper Center for Public Service, Rector and Visitors of the University of Virginia (Dustin A. Cable, creator)}}
 		\end{figure}
 	\end{frame}
-	\fi
+
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	\iflong
+
 	\begin{frame}\frametitle{Philadelphia: High diversity, highly uneven, high exposure}
 		\begin{figure}
 			\includegraphics[width=\textwidth]{external_figs/philly_dot.png}
 			\caption{\textit{Image Copyright, 2013, Weldon Cooper Center for Public Service, Rector and Visitors of the University of Virginia (Dustin A. Cable, creator)}}
 		\end{figure}
 	\end{frame}
-	\fi
+
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Diversity and Information Theory}
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -163,7 +161,7 @@
 		\begin{block}{Mutual Information}
 			\begin{align*}
 				I(X,Y) &\triangleq \mathbb{E}_{X,Y}\left[\log \frac{p(X,Y)}{p(X)p(Y)}\right] \\
-				&= \int_{\mathbb{R}^n} \; d^nx  \sum_{y \in \mathcal{Y}} p(x,Y) \log \frac{p(x,Y)}{p(x)p(Y)}\;.
+				&= \int_{\mathbb{R}^n} \; d^nx  \sum_{y \in \mathcal{Y}} p(x,y) \log \frac{p(x,y)}{p(x)p(y)}\;.
 			\end{align*}	
 		\end{block}
 		\onslide<2->{\begin{align*}
@@ -179,7 +177,7 @@
 			\begin{block}{Theorem}
 				Under appropriate regularity conditions, for small $r$,
 				\begin{equation*}
-					\frac{I_r(x_0)}{r^2} \cong \frac{1}{4} \text{trace } J_Y(x_0)\;, \tag{proof on request}
+					\frac{I_r(x_0)}{r^2} \cong \frac{1}{4} \text{trace } J_Y(x_0)\;, 
 				\end{equation*}
 				where $J_Y(x_0)$ is the Fisher information in $Y$ about $x_0$ \nocite{Amari2000}
 			\end{block}
@@ -193,7 +191,7 @@
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	\begin{frame}\frametitle{Mean Local Information Measures Spatial Exposure}
-		We're interested in the average value of local information: 
+		We're interested in the average value of local information as captured by $J_Y(X)$: 
 
 		\onslide<2->{
 			\begin{block}{Mean Local Information}
