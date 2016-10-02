@@ -12,3 +12,7 @@ throughput/*
 *.gz
 *.fdb_latexmk
 *.toc
+*.blg
+*.bbl
+*.sublime-workspace
+*.xml
