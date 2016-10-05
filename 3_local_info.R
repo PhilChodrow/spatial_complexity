@@ -1,4 +1,3 @@
-resolution <- 1/2
 
 library(sp, quietly = TRUE)
 library(compx, quietly = TRUE)
@@ -12,6 +11,10 @@ library(magrittr, quietly = TRUE)
 library(ggrepel, quietly = TRUE)
 library(grid, quietly = TRUE)
 library(rgdal, quietly = TRUE)
+
+races <- c('Black', 'Hispanic', 'Asian', 'White', 'Other')
+resolution <- 1/2
+
 
 # Toy cities ----------
 
@@ -27,11 +30,18 @@ library(rgdal, quietly = TRUE)
 
 cities <- list.files('data/cities')
 
-
-
 if(!dir.exists('throughput/grids')){
 	dir.create('throughput/grids')
 }
+
+if(!dir.exists('throughput/grid_tracts')){
+	dir.create('throughput/grid_tracts')
+}
+
+
+
+
+
 
 
 
@@ -61,16 +71,36 @@ if(file.exists('throughput/info_cache.csv')){
 
 
 for(city in cities){
-	races <- c('Black', 'Hispanic', 'Asian', 'White', 'Other')
 	tracts <- readOGR(dsn = paste0('data/cities/',city), layer = 'geo', verbose = FALSE)
-	tracts <- tracts[tracts@data$total > 0,]
+	
 	tracts@data$area <- tracts@data$ALAND / 1000^2	
 	tracts <- tracts[tracts@data$total / tracts@data$area > 50,] # at least 50 people per km^2
 	
-	radius = 1/sqrt(85 * 111) * resolution # (roughly 1 km after lat-lon conversion)
+	radius = 1/sqrt(85 * 111) * resolution # (roughly resolution km after lat-lon conversion)
 	xx = spsample(tracts, type="hexagonal", cellsize=radius)
 	print(paste0(city, ': ',  nrow(tracts@data), ' tracts || ', length(xx), ' grid cells'))
 	xxpl = HexPoints2SpatialPolygons(xx)
+	
+	local_information <- function(tracts, grid){
+		h <- function(i){
+			window <- tracts[xxpl[i,],]@data[,c(races, 'total', 'area')]
+			window <- window / (window$area) # total becomes density
+			c(mean(window$total), 
+			  4 * mutual_info(window[,races]) / resolution^2,  
+			  H(colSums(window[,races]) /sum(window[,races])), 
+			  nrow(window)) # returns estimated density and mutual info
+		}
+		df <- 1:length(xxpl) %>%
+			as.matrix() %>%
+			apply(MARGIN = 1, FUN = h) %>% 
+			t %>% 
+			as.data.frame()
+		names(df) <- c('density', 'info', 'entropy', 'n')
+		
+		SpatialPolygonsDataFrame(xxpl, data = df)
+	}
+	
+	
 	
 	# Define information measures on the grid 
 	h <- function(i){
@@ -95,7 +125,6 @@ for(city in cities){
 	to_save <- SpatialPolygonsDataFrame(xxpl, data = df)
 	tryCatch(writeOGR(to_save, paste0("throughput/grids/", city),'geo', driver = 'ESRI Shapefile', morphToESRI = TRUE),
 			 error = function(e) NULL)
-	
 	
 	# summarized output
 	out <- data.frame(

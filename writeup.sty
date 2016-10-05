@@ -1,4 +1,4 @@
-\ProvidesPackage{writeup}
+\ProvidesPackage{pc_writeup}
 
 
 \usepackage[T1]{fontenc}
@@ -18,10 +18,21 @@
 \usepackage{csvsimple}
 \usepackage{standalone}
 \usepackage{csquotes}
+\usepackage{titlesec}
+% \usepackage{listings}
+% \usepackage{hyperref}
 
-%\usepackage{erewhon}% set fontz
-%\usepackage{pxfonts}
-%\usepackage[T1]{fontenc}
+\titleformat{\section}
+  {\LARGE}
+  {\thesection}
+  {1em}
+  {}
+
+\titleformat{\subsection}
+  {\itshape\large}
+  {\thesubsection}
+  {1em}
+  {}
 
 \usepackage[sc]{mathpazo} % Use the Palatino font
 \usepackage[T1]{fontenc}	
