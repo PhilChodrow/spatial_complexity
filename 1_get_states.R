@@ -1,35 +1,28 @@
-library(sp, quietly = TRUE)
-library(compx, quietly = TRUE)
+# library(sp, quietly = TRUE)
 library(acs, quietly = TRUE)
-library(plyr, quietly = TRUE)
 library(dplyr, quietly = TRUE)
-library(readr, quietly = TRUE)
-library(ggmap, quietly = TRUE)
 library(tidyr, quietly = TRUE)
-library(magrittr, quietly = TRUE)
-library(ggrepel, quietly = TRUE)
-library(grid, quietly = TRUE)
-library(rgdal, quietly = TRUE)
-library(tigris, quietly = TRUE)
 library(stringr, quietly = TRUE)
-library(acs, quietly = TRUE)
 
 
 # get list of states
 
-cities <- read_csv('assumptions/cities.csv')
-cities$state = word(cities$state, -1)
+cities <- readr::read_csv('assumptions/cities.csv')
+cities$state <- word(cities$state, -1)
+
+if(!dir.exists('data')){
+	dir.create('data')
+}
 
 
 if(!dir.exists('data/states')){
 	dir.create('data/states')
 }
 
-
 # Define data-getter
 
 f <- function(state){
-	counties <- acs.fetch(geography=geo.make(state=state, county="*"), 
+	counties <- acs::acs.fetch(geography=acs::geo.make(state=state, county="*"), 
 				   endyear = 2014,
 				   table.number="B01003")
 	counties <- as.numeric(geography(counties)[[3]])
@@ -74,11 +67,8 @@ f <- function(state){
 	tracts@data$area <- tracts@data$ALAND / 1000^2
 	
 	tracts <- tigris::geo_join(tracts, race, "GEOID", "GEOID")
-	writeOGR(tracts, paste0("data/states/", state),'geo', driver = 'ESRI Shapefile', morphToESRI = TRUE)
+	rgdal::writeOGR(tracts, paste0("data/states/", state),'geo', driver = 'ESRI Shapefile', morphToESRI = TRUE)
 }
-
-
-
 
 # Get all the states
 cities <- c(unique(toupper(cities$state[nchar(cities$state) == 2])), 'DC')
@@ -88,9 +78,3 @@ for(state in cities){
 		tryCatch(f(state), error = function(e) NULL)
 	}
 }
-
-
-
-
-
-

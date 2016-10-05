@@ -16,3 +16,4 @@ throughput/*
 *.bbl
 *.sublime-workspace
 *.xml
+.Rproj.user

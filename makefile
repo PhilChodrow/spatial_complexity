@@ -6,8 +6,8 @@ _outputs = outputs/paper.pdf outputs/pres_short.pdf outputs/pres_long.pdf
 
 all: outputs
 outputs: $(_outputs)
-
-
+data: data/states/* data/cities
+figs: 5_figs.html
 # Cleaning
 
 clean: # output
