@@ -1,0 +1,66 @@
+%!TEX program = xelatex
+
+% -----------------------------------------------------------------------------
+% ------------------------------- PREAMBLE ------------------------------------
+% -----------------------------------------------------------------------------
+
+\documentclass[english]{scrartcl}
+
+\title{Segregation Measures for Data Analysis} % work on this
+\author{\emph{Phil Chodrow}}
+\date{\emph{\today}}
+
+\usepackage{pc_writeup}
+\usepackage{pc_math}
+
+% -----------------------------------------------------------------------------
+% --------------------------------- BODY --------------------------------------
+% -----------------------------------------------------------------------------
+
+\begin{document}
+\setkomafont{disposition}{\mdseries\rmfamily}
+
+\maketitle
+
+\abstract{}
+
+\section{Introduction} \label{sec:intro}
+	\begin{itemize}
+		\item While many measures are available for the measurement of spatial diversity, we are not aware of quantitative methods for \emph{identifying} spatial structure. 
+		\item We endorse an information-theoretic approach to the study of diversity and segregation. In supporting this approach, we make two main contributions: 
+		\begin{itemize}
+			\item First, we argue that a simple suite of information measures -- entropy, mutual information, and local information -- intuitively measure global diversity, spatial unevenness, and spatial exposure. The mean local information is novel, and we develop some of its useful properties. This triplet of information measures readily lends itself to quantifying dimensions of segregation within and between cities. 
+			\item Measures such as those we develop above can be viewed as measuring different kinds of sociospatial structure. To our knowledge, no such analysis methods have been proposed for \emph{identifying} that structure. Building on our information methods, we develop an algorithm for clustering urban areas into regions whose demographics are near constant in space. The result allows the analyst to both easily visualize spatial patterns of difference and conduct analysis using a natural partition of urban space. 
+		\end{itemize}
+	\end{itemize}
+\section{Lit Review, Previous Work. Why our problem is new.} \label{sec:previous}
+	Core points: 
+	\begin{itemize}
+		\item Previous work is missing unification
+		\item Previous work is missing a practical component: how do you compute and learn about urban structure with it? 
+	\end{itemize}
+
+\section{Segregation and Information} \label{sec:information}
+	Broadly introduce information measures as we motivate the corresponding sociological concepts. 
+	\begin{itemize}
+		\item The information-theoretic framework: relationship between structure and prediction
+		\item Entropy measures global diversity
+		\item Mutual information measures spatial unevenness
+		\item Mean local information measures spatial exposure
+		\item Example of how to compute
+		\item Comparative metrics
+	\end{itemize}
+
+\section{Identifying Sociospatial Structure} \label{sec:id}
+	\begin{itemize}
+		\item Construct the algorithm. 
+		\item Show algorithm results for one or two cities; show how knowing the clusters can lead to neat data analysis. 
+		\item Relate algorithmic performance to suite of information measures above. Note that $J$ measures the ``natural fault lines'' where we would expect the algorithm to segment.  
+	\end{itemize}
+
+\section{Discussion} \label{sec:discussion}
+
+\bibliography{/Users/phil/bibs/library.bib}{}
+\bibliographystyle{plain}
+
+\end{document}
