@@ -5,7 +5,7 @@ library(rgeos, quietly = TRUE)
 library(ggplot2, quietly = TRUE)
 library(Matrix, quietly = TRUE)
 library(maptools, quietly = TRUE)
-library(profvis, quietly = TRUE)
+# library(profvis, quietly = TRUE)
 library(readr, quietly = TRUE)
 library(ggrepel, quietly = TRUE)
 library(caTools, quietly = TRUE)
@@ -30,7 +30,7 @@ if(!dir.exists('throughput/clusterings')){
 
 for(city in cities){
 	print(city)
-	spdf <- readOGR(dsn = paste0('data/cities/', city), layer = 'geo')
+	spdf <- readOGR(dsn = paste0('data/cities/', city), layer = 'geo',verbose = FALSE)
 	spdf <- spdf[sum(spdf@data[,columns]) != 0,]
 	df <- spdf@data[,columns]
 	row.names(df) <- 1:nrow(df)

@@ -28,8 +28,6 @@ library(grid)
 library(stargazer)
 library(magrittr)
 
-
-
 columns = c('Asian', 'Black', 'Other', 'White', 'Hispanic')
 
 ```
@@ -44,7 +42,7 @@ The purpose of this document is to generate the figures used in this project. It
 
 ```{r, fig.height=3}
 checkerboard_illustration()
-ggsave('figs/checkerboard.png', width = 4, height = 1.5)
+ggsave('figs/checkerboard.pdf', width = 4, height = 1.5)
 ```
 
 ## Methodological illustration
@@ -103,7 +101,7 @@ method_illustration <- function(city, vmax){
 # 
 # grid.draw(g)
 # 
-# ggsave('figs/method_illustration.png', g, width = 8, height = 5)
+# ggsave('figs/method_illustration.pdf', g, width = 8, height = 5)
 
 ```
 
@@ -131,7 +129,7 @@ expand.grid(x = 1:8, y = 1:8) %>%
 		ylab('') +
 		guides(fill=FALSE)
 
-ggsave('figs/decomposability.png', width = 2.5, height = 1.5)
+ggsave('figs/decomposability.pdf', width = 2.5, height = 1.5)
 
 ```
 
@@ -152,16 +150,16 @@ highlight <- cache %>%
 	filter(I_XY > .4)
 
 cache %>%
-	ggplot(aes(x = I_XY, y = weighted_J)) + 
+	ggplot(aes(x = I_XY, y = J_XY)) + 
 	geom_point(color = 'grey') + 
-	theme_minimal() + 
+	theme_light() + 
 	ylab(expression(J(X,Y))) + 
 	xlab(expression(I(X,Y))) + 
 	ggtitle('Mutual information and mean local information in major US cities') +
 	geom_point(data = highlight, color = 'firebrick') + 
-	geom_text_repel(data = highlight, aes(label = city))
+	geom_text_repel(data = highlight, aes(label = city)) 
 
-ggsave('figs/mutual_fisher.png', width = 8, height = 4)
+ggsave('figs/mutual_fisher.pdf', width = 10, height = 6)
 
 ```
 
@@ -169,7 +167,7 @@ ggsave('figs/mutual_fisher.png', width = 8, height = 4)
 ## Relationship to population density
 ```{r}
 lm_eqn <- function(df){
-	m <- lm(weighted_J ~ log(density) + I_XY, data = df) 
+	m <- lm(J_XY ~ log(density) + I_XY, data = df) 
 	eq <- substitute(italic(y) == a + b %.% 'I(X,Y)' + c %.% ~'log' ~italic(rho)*","~~italic(r)^2~"="~r2, 
 					 list(a = format(coef(m)[1], digits = 2), 
 					 	 b = format(coef(m)[2], digits = 2), 
@@ -181,7 +179,7 @@ lm_eqn <- function(df){
 cache %>% 
 	rename(`I(X,Y)` = I_XY) %>% 
 	# filter(!grepl('Los Angeles', city)) %>%
-	ggplot(aes(x = density, y = weighted_J)) +
+	ggplot(aes(x = density, y = J_XY)) +
 	geom_smooth(method = 'lm', se = FALSE, color = 'black', size = .4) +
 	annotate('text', x = 3000, y = .2, label = lm_eqn(cache), parse = T) + 
 	geom_point(color = 'grey') + 
@@ -195,7 +193,7 @@ cache %>%
 	annotation_logticks(size = .1, sides = 'b') +
 	ggtitle('Dependence of spatial complexity on population density')
 
-ggsave('figs/density_fisher.png', width = 8, height = 4)
+ggsave('figs/density_fisher.pdf', width = 10, height = 6)
 ```
 
 
@@ -205,7 +203,7 @@ ggsave('figs/density_fisher.png', width = 8, height = 4)
 # Table --------
 
 tab <- cache %>% 
-	select(area, population, H_Y, I_XY, J = weighted_J) %>% 
+	select(area, population, H_Y, I_XY, J = J_XY) %>% 
 	mutate(Density = population / area) %>% 
 	round(2) %>%
 	cbind(cache$city, .) %>%
@@ -241,7 +239,7 @@ datatable(tab, options = list(pageLength = 10), rownames = FALSE,
 
 ```{r}
 
-loss_curves <- read_csv('throughput/loss_curves.csv') %>% 
+loss_curves <- read_csv('throughput/loss_curves.csv') %>%
 	group_by(city) %>% 
 	arrange(desc(I_XY)) %>% 
 	mutate(I_XY = max(I_XY) - I_XY,
@@ -249,7 +247,7 @@ loss_curves <- read_csv('throughput/loss_curves.csv') %>%
 	
 info_summary <- read_csv('throughput/info_cache.csv')
 
-join_cols <- c('area', 'population', 'density', 'H_X', 'H_Y', 'local.H_Y', 'weighted_J', 'city')
+join_cols <- c('area', 'population', 'density',  'H_Y', 'J_XY', 'city')
 loss_curves <- loss_curves %>% left_join(info_summary[,join_cols])
 
 ```
@@ -292,7 +290,7 @@ cluster_map <- function(city, nclusters = 10){
 
 cluster_map('Detroit', nclusters = 6)
 
-ggsave('figs/example_cluster_map.png',  width = 8, height = 4)
+ggsave('figs/example_cluster_map.pdf',  width = 10, height = 6)
 
 ```
 
@@ -305,7 +303,7 @@ make_cluster_groups <- function(city, nclusters = 10){
 	
 	tracts@data$cluster <- cutree(clusters,nclusters)
 	
-	I <- mutual_info(tracts@data[,c(columns, 'cluster')],group_col = 'cluster')
+	I <- mutual_info(tracts@data[,columns])
 	
 	tracts@data <- tracts@data %>%
 		mutate(id = as.character(row_number() - 1))
@@ -348,7 +346,7 @@ df %>%
 	ggtitle(paste0('Example clusters')) + 
 	facet_wrap(~title, ncol = 2)
 
-ggsave('figs/example_clusters.png')
+ggsave('figs/example_clusters.pdf', width = 10, height = 6)
 
 ```
 
@@ -367,7 +365,7 @@ make_cluster_groups('Detroit', 6) %>%
 	scale_fill_continuous(low = 'white', high = 'steelblue', limits = c(0, NA), guide = FALSE) 
 	# ggtitle(paste0('Example clusters')) 
 
-ggsave('figs/example_clusters_detailed.png', width = 4, height = 2)
+ggsave('figs/example_clusters_detailed.pdf', width = 10, height = 6)
 
 ```
 
@@ -398,13 +396,13 @@ sapply(slot(overlay, "polygons"), slot, "area")  %>% simplex_normalize()
 end_points <- loss_curves %>%
 	group_by(city) %>%
 	filter(nclust == max(nclust)) %>% 
-	filter(weighted_J > 1.25 | weighted_J < .75)
+	filter(J_XY > 1.25 | J_XY < .75)
 
 loss_curves %>% 
 	ggplot() +
 	aes(x = nclust, y = I_XY, group = city) +
-	geom_path(aes(color = weighted_J)) +
-	# geom_point(aes(color = weighted_J), size = .3) +
+	geom_path(aes(color = J_XY)) +
+	# geom_point(aes(color = J_XY), size = .3) +
 	scale_x_continuous(trans = 'log10', limits = c(1, max(loss_curves$nclust) + 1000)) +
 	# scale_y_continuous(trans = 'log10') +
 	geom_text(aes(x = nclust, y = I_XY, label = city, hjust = -.2), data = end_points) +
@@ -413,7 +411,7 @@ loss_curves %>%
 	annotation_logticks(size = .1, sides = 'b') +
 	ggtitle('Loss curves for spatially-constrained information-theoretic clustering')
 
-ggsave('figs/loss_curves.png', width = 8, height = 4)
+ggsave('figs/loss_curves.pdf', width = 10, height = 6)
 
 ```
 
@@ -428,7 +426,7 @@ loss_curves %>%
 	ggplot() +
 	aes(x = nclust, y = I_XY, group = city) +
 	geom_path(aes(color = I_max)) +
-	# geom_point(aes(color = weighted_J), size = .3) +
+	# geom_point(aes(color = J_XY), size = .3) +
 	scale_x_continuous(trans = 'log10', limits = c(1, max(loss_curves$nclust) + 1000)) +
 	# scale_y_continuous(trans = 'log10') +
 	geom_text(aes(x = nclust, y = I_XY, label = city, hjust = -.2), data = end_points) +
@@ -452,7 +450,7 @@ loss_curves %>%
 	mutate(nclust = nclust / max(nclust)) %>%
 	# filter(nclust < 100) %>%
 	ggplot() +
-	aes(x = nclust, y = I_XY, color = weighted_J, group = city) +
+	aes(x = nclust, y = I_XY, color = J_XY, group = city) +
 	geom_path() +
 	scale_x_continuous(trans = 'log10') +
 	scale_y_continuous(trans = 'log10') +
@@ -461,7 +459,7 @@ loss_curves %>%
 	annotation_logticks(size = .1, sides = 'b') + 
 	ggtitle('Normalized loss curves for spatially-constrained information-theoretic clustering')
 
-ggsave('figs/normed_loss_curves.png', width = 8, height = 4)
+ggsave('figs/normed_loss_curves.pdf', width = 10, height = 6)
 ```
 
 ## Evaluating loss curves
@@ -469,7 +467,6 @@ ggsave('figs/normed_loss_curves.png', width = 8, height = 4)
 ### AUC illustration
 
 ```{r}
-
 
 cities <- c('Atlanta','Boston')
 
@@ -482,24 +479,18 @@ compute_AUC <- function(loss_curves, adjust_thresh = 0){
 		mutate(dx = log(nclust / (nclust - 1))) %>%
 		filter(nclust > 1) %>%
 		group_by(city) %>%
-		arrange(nclust) %>%
+		dplyr::arrange(nclust) %>%
 		summarise(corner = max(I_XY) * log(max(nclust)),
 				  area = trapz(nclust, I_XY / nclust)) %>%
 		mutate(AUC = area / corner) %>%
-		arrange(desc(AUC)) 
+		dplyr::arrange(desc(AUC)) 
 }
 
-
-
-
-
-
 summary <- compute_AUC(loss_curves, adjust_thresh = 0) 
-
 summary <- summary %>% left_join(cache, by = c('city' = 'city'))
 
 # %>%
-# 	left_join(info_summary[,c('city', 'weighted_J', 'I_XY')]) %>%
+# 	left_join(info_summary[,c('city', 'J_XY', 'I_XY')]) %>%
 # 	filter(I_XY > 0) 
 
 sub_summary <- summary %>% filter(city %in% cities)
@@ -514,14 +505,16 @@ end_points <- sub_curves %>%
 rects <- sub_curves %>% group_by(city) %>% 
 	summarise(xmin = 1, ymin = 0, xmax = max(nclust), ymax = max(I_XY))
 
-filled <- sub_curves[,c('nclust','I_XY', 'city')]
+filled <- sub_curves[,c('nclust','I_XY', 'city')] %>% 
+  select(city, I_XY, nclust) %>% 
+  ungroup()
 
 corner <- filled %>% group_by(city) %>%
-	summarise(nclust = max(nclust),
-			  I_XY = 0)
+	summarise(I_XY = 0,
+	          nclust = max(nclust)) 
 
-filled <- rbind(corner, filled) %>%
-	arrange(city, nclust, desc(I_XY))
+filled <- rbind(corner, filled) %>%  # problem is right here, the columns don't add up
+	dplyr::arrange(city, nclust, desc(I_XY))
 
 sub_curves %>% 
 	ggplot() +
@@ -540,7 +533,7 @@ sub_curves %>%
 	# geom_text(aes(x = nclust, y = I_XY, label = city, hjust = -.2), data = end_points) + 
 	geom_polygon(aes(nclust, I_XY, fill = city), data = filled, alpha = .2) + 
 	geom_text(aes(x = 50, y = .2, label = paste('AUC = ', round(AUC,2))), data = sub_summary) + 
-	geom_text(aes(x = 50, y = .1, label = paste('J(X,Y) = ', round(weighted_J,2))), data = sub_summary) +
+	geom_text(aes(x = 50, y = .1, label = paste('J(X,Y) = ', round(J_XY,2))), data = sub_summary) +
 	facet_wrap(~city) + 
 	scale_fill_discrete(guide = F) + 
 	scale_color_discrete(guide = F) + 
@@ -549,8 +542,7 @@ sub_curves %>%
 	ggtitle('AUC as Clustering Evaluation')
 
 
-
-ggsave('figs/AUC_illustration.png', width = 8, height = 4)
+ggsave('figs/AUC_illustration.pdf', width = 10, height = 6)
 ```
 
 
@@ -582,10 +574,10 @@ summary %>%
 
 ```{r}
 
-summary[,c('I_XY', 'weighted_J', 'AUC', 'adj_AUC')] %>% 
+summary[,c('I_XY', 'J_XY', 'AUC', 'adj_AUC')] %>% 
 	round(2) %>% 
 	cbind(summary$city) %>% 
-	select(city = `summary$city`, I_XY, weighted_J, AUC, adj_AUC) %>%
+	select(city = `summary$city`, I_XY, J_XY, AUC, adj_AUC) %>%
 	datatable(options = list(pageLength = 10), rownames = FALSE,
 		  caption = 'Table 1: This is a simple caption for the table.')
 ```
@@ -600,7 +592,7 @@ highlight <- summary %>%
 summary %>%
 	ggplot() +
 	aes(x = I_XY, y = AUC) +
-	geom_point(aes(color = weighted_J)) +
+	geom_point(aes(color = J_XY)) +
 	geom_smooth(color = 'grey', se = F) +
 	geom_text_repel(aes(label = city), data = highlight) + 
 	theme_minimal() + 
@@ -609,7 +601,7 @@ summary %>%
 	xlab('I(X,Y)') + 
 	ylab('AUC')
 
-ggsave('figs/info_performance.png', width = 8, height = 4)
+ggsave('figs/info_performance.pdf', width = 10, height = 6)
 
 ```
 
@@ -619,7 +611,7 @@ highlight <- summary %>% filter(I_XY > .4)
 summary %>%
 	ggplot() +
 	aes(x = I_XY, y = adj_AUC) +
-	geom_point(aes(color = weighted_J)) +
+	geom_point(aes(color = J_XY)) +
 	geom_smooth(color = 'grey', se = F) +
 	geom_text_repel(aes(label = city), data = highlight) + 
 	theme_minimal() + 
@@ -630,7 +622,7 @@ summary %>%
 	theme(legend.justification=c(1.5,0),
 			  legend.position=c(1,0))
 
-ggsave('figs/info_performance_adjed.png', width = 8, height = 4)
+ggsave('figs/info_performance_adjed.pdf', width = 10, height = 6)
 
 ```
 
@@ -639,7 +631,7 @@ ggsave('figs/info_performance_adjed.png', width = 8, height = 4)
 ```{r}
 summary %>% mutate(AUC = adj_AUC / max(adj_AUC),
 		   `I(X,Y)` = I_XY / max(I_XY),
-		   `J(X,Y)` = weighted_J / max(weighted_J),
+		   `J(X,Y)` = J_XY / max(J_XY),
 		   `H(Y)` = H_Y / max(H_Y)) %>%
 	filter(I_XY > 0) %>%
 	lm(AUC ~ `H(Y)` + `I(X,Y)` + `J(X,Y)`, data = .) %>% 
@@ -652,23 +644,90 @@ summary %>% mutate(AUC = adj_AUC / max(adj_AUC),
 	write(file = 'figs/adjusted_regression.txt')
 ```
 
-
-
-
 ```{r}
 
 summary %>% mutate(AUC = adj_AUC / max(adj_AUC),
 		   `I(X,Y)` = I_XY / max(I_XY),
-		   `J(X,Y)` = weighted_J / max(weighted_J),
+		   `J(X,Y)` = J_XY / max(J_XY),
 		   `H(Y)` = H_Y / max(H_Y),
 		   density = density / max(density)) %>%
 	lm(`J(X,Y)` ~ log(density) + `I(X,Y)`, data = .) %>% 
 	summary()
 
+```
 
 
+
+```{r}
+cities <- c('Detroit', 'Philadelphia')
+
+tab <- data.frame(city = character(), percent_black = numeric(), H_Y = numeric(), I_XY = numeric(), J_XY = numeric())
+
+for(city in cities){
+  tracts <- readOGR(dsn = paste0('data/cities/',city), 
+  	                         layer = 'geo', 
+  	                         verbose = FALSE)
+  
+  grid_tract <- read_csv(file = paste0('throughput/grid_tracts/', city, '.csv'))
+  grid <- readOGR(dsn = paste0('throughput/grids/',city), 
+  	                         layer = 'grid', 
+  	                         verbose = FALSE)
+  
+  df <- tracts@data %>%
+    mutate(percent_black = Black / total) %>% 
+    tbl_df
+  
+  tracts %>% 
+    fortify(region = 'GEOID') %>% 
+    tbl_df() %>% 
+    left_join(df, by = c('id' = 'GEOID')) %>% 
+    ggplot(aes(x = long, y = lat, fill = percent_black, group = group)) + 
+    geom_polygon() + 
+    viridis::scale_fill_viridis(name = 'Percent Black', labels = scales::percent) + 
+    ggtitle(city) + 
+    ggthemes::theme_map() + 
+    theme(legend.justification=c(0,0), legend.position=c(.7,0)) + 
+    theme(plot.title = element_text(size=10, 
+                                  vjust=1),
+          legend.title = element_text(size = 8))
+  
+  ggsave(paste0('figs/', city, '_percent_black.pdf'), width = 10, height = 10, units = 'cm')
+  
+  tracts@data <- tracts@data %>% 
+    mutate(non_black = Hispanic + Other + White + Asian)
+  
+  columns = c('non_black', 'Black')
+  stuff <- compx::info_analysis(tracts, columns = columns, resolution = NULL, grid_tract = grid_tract, grid = grid)
+  
+  stuff$grid %>% 
+    fortify(region = 'id') %>% 
+    left_join(stuff$grid@data[,c('id', 'pop', 'info')], by = c('id' = 'id')) %>% 
+    ggplot(aes(x = long, y = lat, fill =  info, group = group)) + 
+    geom_polygon() + 
+    viridis::scale_fill_viridis(name = expression(J[Y](x))) + 
+    ggthemes::theme_map() +
+    ggtitle(city) + 
+    theme(legend.justification=c(0,0), legend.position=c(.7,0),
+          legend.title = element_text(size = 8)) + 
+    theme(plot.title = element_text(size=10, 
+                                  vjust=1))
+  
+  # paste0('figs/', city, '_grid.pdf')
+  ggsave(paste0('figs/', city, '_grid.pdf'), width = 10, height = 10, units = 'cm')
+  
+  percent_black = sum(tracts@data$Black) / sum(tracts@data$total)
+  
+  new_row <- data.frame(city = city, percent_black = percent_black, H_Y = stuff$H_Y, I_XY = stuff$I_XY, J_XY = stuff$J_XY)
+  tab <- rbind(tab, new_row)
+}
+
+tab[,-1] <- round(tab[,-1],2)
+
+tab %>% write_csv('figs/comparative_summary.csv')
 
 ```
+
+
 
 
 

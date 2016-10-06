@@ -12,6 +12,7 @@
 
 \usepackage{pc_writeup}
 \usepackage{pc_math}
+\usepackage{csvsimple}
 \usepackage[colorinlistoftodos]{todonotes}
 
 % -----------------------------------------------------------------------------
@@ -53,7 +54,7 @@
 	It is possible to show (see e.g. \cite{Cover1991}) that these properties uniquely determine the logarithmic reward function $R(p,Z) = \log p(Z)$ up to an affine transformation. This logarithmic reward is the fundamental unit of information-theoretic analysis. It is customary to focus on the \emph{loss function} $L(p,Z) = - R(p,Z)$. Large loss corresponds to poor prediction. Systemic structure is present when knowledge of a system feature enables us to decrease the loss in such a guessing game. 
 
 	\begin{figure}
-		\includegraphics[width=\textwidth]{figs/checkerboard.png}
+		\includegraphics[width=\textwidth]{figs/checkerboard.pdf}
 		\caption{Information and the checkerboard}. \label{fig:checkerboard}
 	\end{figure}
 
@@ -144,7 +145,19 @@
 			To illustrate these methods, we use them to compare the cities of Philadelphia and Detroit. Our data is blockgroup-level demographics from the American Community Survey \cite{CensusRace}. As we show, computing $H(Y)$, $I(X,Y)$, and $J(X,Y)$ together highlights similarities and differences between these cities. 
 			\todo{We need to generate a nice summary plot here and then fill this section in.}
 			\begin{figure}
-				\caption{Spatial analysis of racial diversity in Detroit (left) and Philadelphia (right). Top: Percentage of black residents in Detroit (left) and Philadelphia (right). Middle: Hexgrid of spatial resolution 1km imposed over each city, shaded by the value of $I(X,Y | X \in B_i)$. Bottom: Estimated contours of constant $I(X,Y | X \in B_i)$; high values correspond to spaces of demographic transition. Very bottom: Numerical summary, including the three information measures.} \label{fig:detroit_philly}
+				\includegraphics[width = .5\textwidth]{figs/Detroit_percent_black.pdf}
+				\includegraphics[width = .5\textwidth]{figs/Detroit_grid.pdf} \\
+				\includegraphics[width = .5\textwidth]{figs/Philadelphia_percent_black.pdf}
+				\includegraphics[width = .5\textwidth]{figs/Philadelphia_grid.pdf} \\
+
+				\centering
+				\begin{tabular}{l | c c c c}
+					\bfseries City & Percent Black & $H(Y)$ & $I(X,Y)$ & $J(X,Y)$  \\\hline
+					\csvreader[late after line=\\]{figs/comparative_summary.csv}{}
+					{\csvcoli & \csvcolii & \csvcoliii & \csvcoliv & \csvcolv}
+				\end{tabular}
+
+				\caption{Spatial analysis of racial diversity in Detroit (top) and Philadelphia (middle). Left: Percentage of black residents in Detroit (left) and Philadelphia (right). Right: Hexgrid of spatial resolution 1km imposed over each city, shaded by the value of $I(X,Y | X \in B_i)$. Bottom: Numerical summary, including the three information measures.} \label{fig:detroit_philly}
 			\end{figure}
 
 		\subsubsection{Comparative Diversity Profiles}
@@ -153,7 +166,7 @@
 			We can achieve a broader picture by comparing $I(X,Y)$ and $J(X,Y)$ across a range of American cities, as we do in Figure \ref{fig:mutual_fisher}. The two measures $I(X,Y)$ and $J(X,Y)$ provide an intuitive sorting of major cities. Cities with small numbers of large, monoracial regions such as Atlanta and Detroit are sorted toward the bottom right while cities with more complicated patchworks of demographic variation like Philadelphia and New York are sorted toward the top right. 
 
 			\begin{figure}
-				\includegraphics[width=\textwidth]{figs/mutual_fisher.png}
+				\includegraphics[width=\textwidth]{figs/mutual_fisher.pdf}
 				\caption{Comparative global diversity measures in major U.S. cities. Cities toward the bottom left are relatively spatially even. Cities toward the bottom right like Detroit and Atlanta are the most classically ``segregated'', with large, starkly separated monoracial regions. Cities toward the top right like Philadelphia and New York are complex ``patchworks'' of different, smaller regions.} \label{fig:mutual_fisher}
 			\end{figure}
 
@@ -163,11 +176,33 @@
 
 	We can view $H(Y)$, $I(X,Y)$, and $J(X,Y)$ as measures of the presence of sociospatial structure. It is somewhat unsatisfying to simply measure this structure without actually identifying it, since identifying this structure is of direct application in sociological data analysis. In this section, we use information-theoretic techniques to construct a procedure for finding subregions within cities that capture high-level demographic trends. 
 
-	A useful place to start is with the property of ``additive spatial decomposition'' \cite{Reardon2004}. A diversity measure satisfies additive spatial decomposition when, if spatial units are aggregated into groups, the measure can be expressed as a sum of a ``within group'' term expressing variability within aggregations, and a ``between group'' term expressing variability across aggregations. 
+	A useful place to start is with the property of ``additive spatial decomposition'' \cite{Reardon2004}. A diversity measure satisfies additive spatial decomposition when, if spatial units are aggregated into groups, the measure can be expressed as a sum of a ``within group'' term expressing variability within aggregations, and a ``between group'' term expressing variability across aggregations. The mutual information $I(X,Y)$ satisfies this property due to the following information-theoretic identity. Let $C$ be a random variable with the property that $H(C|X) = 0$; i.e. $X$ completely determines $C$. We can think of $C$ as group labels for the spatial locations $X$. Then, the chain rule of information implies that 
+	\begin{equation}
+		I(X,Y) = \underbrace{I(C,Y)}_{\text{between-group}} + \underbrace{I(X,Y|C)}_{\text{within-group}}. \label{eq:chain_rule}
+	\end{equation}
+	Equation \eqref{eq:chain_rule} expresses the following intuitive information decomposition: the information you have if I tell you first a resident's approximate residence $C$ and subsequently their exact residence $X$ is just the same as the information you would have if I simply told you $X$ directly. 
 
+	Equation \eqref{eq:chain_rule} also motivates a natural algorithm for identifying sociospatial structure. The core idea is that a clustering $C$ is ``good'' when it captures most of the intrinsic information in the system in the between-groups term $I(C,Y)$. This idea is analogous to between-group sum-of-squares maximization in classical ANOVA methods. We therefore seek to maximize $I(C,Y)$. In full generality, this is a challenging discrete optimization problem that may not be computationally tractable. We can, however, construct a ``greedy'' algorithm which, though suboptimal, leads to satisfactory results. At each stage of the algorithm, we consider the problem of choosing a pair of locales $\{i*, j*\}$ to aggregate together. A good choice of locales leads to minimal information loss, which we may quantify as follows. The mutual information may also be written: 
+	\begin{align}
+	 	I(X,Y) &= \sum_k p(X = k) D[p(Y|X = k\|p(Y)] 
+	\end{align} 
+	The contribution of two locales $i$ and $j$ to this sum is 
+	\begin{align}
+		I_{i,j}(X,Y) &\triangleq \sum_{k \in \{i,j\}} p(X = k)D[p(Y|X = k\|p(Y)] 
+	\end{align}
+	If we replace $i$ and $j$ with an aggregated local $i\cup j$, its contribution to the mutual information is 
+	\begin{align}
+		I_{i\cup j}(X,Y) = p(X \in \{i,j\}) D[p(Y|X \in \{i,j\}) \| p(Y)]\;.
+	\end{align}
+	The  loss associated with aggregating $i$ and $j$ is the difference between these two terms: 
+	\begin{align}
+		d(i,j) \triangleq I_{i,j}(X,Y) - I_{i \cup j}(X,Y).  
+	\end{align}
+	Like the KL divergence $D$, the function $d$ can be viewed as a measure of distance between probability distributions $p(Y|X = i)$ and $p(Y|X = j)$. Unlike the KL divergence, $d$ is symmetric in $i$ and $j$. 
 
 	\begin{itemize}
 		\item Construct the algorithm. 
+		\item Prove the triangle inequality
 		\item Show algorithm results for one or two cities; show how knowing the clusters can lead to neat data analysis. 
 		\item Relate algorithmic performance to suite of information measures above. Note that $J$ measures the ``natural fault lines'' where we would expect the algorithm to segment.  
 	\end{itemize}
