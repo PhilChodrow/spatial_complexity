@@ -186,19 +186,27 @@
 	\begin{align}
 	 	I(X,Y) &= \sum_k p(X = k) D[p(Y|X = k\|p(Y)] 
 	\end{align} 
-	The contribution of two locales $i$ and $j$ to this sum is 
+	The contribution of locale $i$ to this sum is 
 	\begin{align}
-		I_{i,j}(X,Y) &\triangleq \sum_{k \in \{i,j\}} p(X = k)D[p(Y|X = k\|p(Y)] 
+		I_{i}(X,Y) &\triangleq \sum_{k \in \{i\}} p(X = i)D[p(Y|X = i\|p(Y)] 
 	\end{align}
 	If we replace $i$ and $j$ with an aggregated local $i\cup j$, its contribution to the mutual information is 
 	\begin{align}
 		I_{i\cup j}(X,Y) = p(X \in \{i,j\}) D[p(Y|X \in \{i,j\}) \| p(Y)]\;.
 	\end{align}
-	The  loss associated with aggregating $i$ and $j$ is the difference between these two terms: 
+	The  loss associated with aggregating $i$ and $j$ is the difference between individual contributions and their aggregated contribution:
 	\begin{align}
-		d(i,j) \triangleq I_{i,j}(X,Y) - I_{i \cup j}(X,Y).  
+		d(i,j) \triangleq I_{i}(X,Y) + I_{j}(X,Y) - I_{i \cup j}(X,Y).  
 	\end{align}
-	Like the KL divergence $D$, the function $d$ can be viewed as a measure of distance between probability distributions $p(Y|X = i)$ and $p(Y|X = j)$. Unlike the KL divergence, $d$ is symmetric in $i$ and $j$. 
+	Like the KL divergence $D$, the function $d$ can be viewed as a measure of distance between probability distributions $p(Y|X = i)$ and $p(Y|X = j)$. Unlike the KL divergence, $d$ is symmetric in $i$ and $j$; it is not a true metric because it does not satisfy the triangle inequality. It can nevertheless be used to motivate a form of agglomerative hierarchical clustering, where at each phase of the algorithm we compute 
+	\begin{equation}
+		(i^*m, j^*) = \argmin_{i \text{neighbors} j} \; d(i,j)\;
+	\end{equation}
+	and combine $i^*$ and $j^*$ into a single new group. We repeat this procedure until only one group remains. The optimizatin over $i$ and $j$ ensures that the groupings so defined approximate maximum between-group information partitions, and the constraint that $i$ must neighbor $j$ ensures that the structure so determined is spatially contiguous. Since this is a greedy algorithm, it possesses no guarantees of solution optimality, but in practice its performance leads to intuitive, demographically-coherent regions. 
+
+	To demonstrate the power of this approach for data analysis, 
+
+
 
 	\begin{itemize}
 		\item Construct the algorithm. 
