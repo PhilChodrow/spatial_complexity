@@ -155,11 +155,13 @@ cache %>%
 	theme_light() + 
 	ylab(expression(J(X,Y))) + 
 	xlab(expression(I(X,Y))) + 
-	ggtitle('Mutual information and mean local information in major US cities') +
+	# ggtitle('Mutual information and mean local information in major US cities') +
 	geom_point(data = highlight, color = 'firebrick') + 
-	geom_text_repel(data = highlight, aes(label = city)) 
+	geom_text_repel(data = highlight, aes(label = city)) + 
+  theme(legend.title = element_text(size = 8),
+        plot.title = element_text(size=10, vjust=1))
 
-ggsave('figs/mutual_fisher.pdf', width = 10, height = 6)
+ggsave('figs/mutual_fisher.pdf', width = 7, height = 4)
 
 ```
 
@@ -691,7 +693,7 @@ for(city in cities){
                                   vjust=1),
           legend.title = element_text(size = 8))
   
-  ggsave(paste0('figs/', city, '_percent_black.pdf'), width = 10, height = 10, units = 'cm')
+  ggsave(paste0('figs/', city, '_percent_black.pdf'), width = 7, height = 7, units = 'cm')
   
   tracts@data <- tracts@data %>% 
     mutate(non_black = Hispanic + Other + White + Asian)
@@ -704,16 +706,15 @@ for(city in cities){
     left_join(stuff$grid@data[,c('id', 'pop', 'info')], by = c('id' = 'id')) %>% 
     ggplot(aes(x = long, y = lat, fill =  info, group = group)) + 
     geom_polygon() + 
-    viridis::scale_fill_viridis(name = expression(J[Y](x))) + 
+    viridis::scale_fill_viridis(name = expression(J[Y](x)), limits = c(0, .5)) + 
     ggthemes::theme_map() +
     ggtitle(city) + 
     theme(legend.justification=c(0,0), legend.position=c(.7,0),
-          legend.title = element_text(size = 8)) + 
-    theme(plot.title = element_text(size=10, 
-                                  vjust=1))
+          legend.title = element_text(size = 8),
+          plot.title = element_text(size=10, vjust=1)) 
   
   # paste0('figs/', city, '_grid.pdf')
-  ggsave(paste0('figs/', city, '_grid.pdf'), width = 10, height = 10, units = 'cm')
+  ggsave(paste0('figs/', city, '_grid.pdf'), width = 7, height = 7, units = 'cm')
   
   percent_black = sum(tracts@data$Black) / sum(tracts@data$total)
   
@@ -722,6 +723,8 @@ for(city in cities){
 }
 
 tab[,-1] <- round(tab[,-1],2)
+
+tab %>% mutate(percent_black = percent_black * 100)
 
 tab %>% write_csv('figs/comparative_summary.csv')
 
