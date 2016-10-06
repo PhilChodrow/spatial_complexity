@@ -1,0 +1,28 @@
+\ProvidesPackage{pc_slides}
+
+
+\usepackage{standalone}
+\usepackage{import}
+\usepackage{csquotes}
+\usepackage{appendixnumberbeamer}
+\usepackage{csvsimple}
+\usepackage{bbding}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{etoolbox}
+\usepackage{hyperref}
+
+\usetheme{metropolis}
+\metroset{block=fill}
+\metroset{progressbar=frametitle}
+\setbeamertemplate{bibliography item}{}
+\setbeamertemplate{caption}{\raggedright\insertcaption\par}
+
+\makeatletter
+\def\beamer@framenotesbegin{% at beginning of slide
+  \gdef\beamer@noteitems{}%
+  \gdef\beamer@notes{{}}% used to be totally empty.
+}
+\makeatother

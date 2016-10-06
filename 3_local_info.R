@@ -1,3 +1,4 @@
+
 library(sp, quietly = TRUE)
 library(compx, quietly = TRUE)
 library(plyr, quietly = TRUE)
@@ -12,6 +13,22 @@ library(rgdal, quietly = TRUE)
 library(data.table)
 
 races <- c('Black', 'Hispanic', 'Asian', 'White', 'Other')
+resolution <- 1/2
+
+
+# Toy cities ----------
+
+# checkerboard_illustration()
+# ggsave('report/figs/toy.png', width = 5, height = 1.9)
+
+# Methodological Illustration ----------------
+
+# method_illustration()
+# ggsave('report/figs/method.png', width = 3, height = 3)
+
+
+
+cities <- list.files('data/cities')
 resolution <- 1
 
 cities <- list.files('data/cities')
@@ -22,7 +39,7 @@ if(!dir.exists('throughput/grids')){
 }
 
 if(!dir.exists('throughput/grid_tracts')){
-  dir.create('throughput/grid_tracts')
+	dir.create('throughput/grid_tracts')
 }
 
 # MAIN COMPUTATION ---------------
@@ -43,7 +60,6 @@ if(file.exists('throughput/info_cache.csv')){
 }
 
 for(city in cities){
-	
 	tracts <- readOGR(dsn = paste0('data/cities/',city), 
 	                  layer = 'geo', 
 	                  verbose = FALSE)
@@ -72,6 +88,7 @@ for(city in cities){
 	           error = function(e) e)
 	}
 	
+	# summarized output
 	out <- data.frame(
 	  city       = city, 
 	  area       = sum(tracts@data$area),
