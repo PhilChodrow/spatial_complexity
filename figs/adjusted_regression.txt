@@ -1,6 +1,6 @@
 
 % Table created by stargazer v.5.2 by Marek Hlavac, Harvard University. E-mail: hlavac at fas.harvard.edu
-% Date and time: Wed, Oct 05, 2016 - 07:27:42 PM
+% Date and time: Fri, Oct 07, 2016 - 08:25:27 AM
 \begin{tabular}{@{\extracolsep{5pt}}lc} 
 \\[-1.8ex]\hline 
 \hline \\[-1.8ex] 
