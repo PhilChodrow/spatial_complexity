@@ -44,9 +44,36 @@ The purpose of this document is to generate the figures used in this project. It
 ## Motivation
 
 ```{r, fig.height=3}
+
+checkerboard_illustration <- function(){
+	expand.grid(x = 1:8, y = 1:8) %>%
+		mutate(`(a)` = 1,
+			   `(b)` = .5,
+			   `(c)` = (x > 4)*1,
+			   `(d)` = (x + y) %% 2) %>%
+		gather(key = model, value = p, -x, -y) %>%
+		ggplot(aes(x = x, y = y)) +
+		ggthemes::theme_map() +
+		theme(axis.ticks = element_blank(),
+			  axis.text.x = element_blank(),
+			  axis.text.y = element_blank(),
+			  panel.margin = unit(1, "mm"),
+			  panel.background = element_rect(),
+			  panel.grid.major = element_line(size = 0),
+			  panel.grid.minor = element_line(size = 0),
+			  strip.background = element_rect(fill = "white", color = "white", size = 2),
+			  plot.margin=unit(c(0,1,0,0),"mm")) +
+		geom_tile(aes(fill = p)) +
+		scale_fill_continuous(low = 'white', high = 'black ', limits=c(0,1)) +
+		facet_grid(~model) +
+		xlab('') +
+		ylab('') +
+		guides(fill=FALSE)
+}
+
 g <- checkerboard_illustration() 
-g + theme(text=element_text(size=16, family="Palatino"))
-ggsave('figs/checkerboard.pdf', width = 4, height = 1.5)
+# g + theme(text=element_text(size=10, family="Palatino"))
+ggsave('figs/checkerboard.pdf', width = 4, height = 1.3)
 embed_fonts("figs/checkerboard.pdf", outfile="figs/checkerboard.pdf")
 ```
 
@@ -378,13 +405,12 @@ make_cluster_groups('Detroit', 6) %>%
 		label = ifelse(p < 0.005, "", 100 * round(p,2))), size = 8, family = 'Palatino') + 
   scale_alpha_continuous(guide = 'none', limits = c(0, .3)) + 
 	theme_minimal() + 
-	theme(text=element_text(size=16, family="Palatino"),
+	theme(text=element_text(size=25, family="Palatino"),
 		  axis.ticks.x = element_blank(),
 		  axis.title = element_blank(),
 		  legend.position="bottom",
 		  legend.title = element_blank(),
-		  line = element_blank(),
-		  text = element_text(size = 25)) 
+		  line = element_blank()) 
 
 ggsave('figs/example_clusters_detailed.pdf', width = 8, height = 6)
 embed_fonts("figs/example_clusters_detailed.pdf", outfile="figs/example_clusters_detailed.pdf")
