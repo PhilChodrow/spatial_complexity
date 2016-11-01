@@ -11,13 +11,17 @@
 % {pnasmathematics} = Template for a one-column mathematics article
 % {pnasinvited} = Template for a PNAS invited submission
 
-\title{Diversity, Segregation, and Complexity in Cities}
+\usepackage{csvsimple}
+% \usepackage{subcaption}
+% \usepackage{csquotes}
+
+\title{Diversity, Segregation, and Information in Cities}
 
 % Use letters for affiliations, numbers to show equal authorship (if applicable) and to indicate the corresponding author
 \author[a,b,1]{Philip Chodrow}
 
-\affil[a]{MIT Human Mobility and Networks Laboratory}
-\affil[b]{MIT Operations Research Center}
+\affil[a]{Human Mobility and Networks Laboratory, Massachusetts Institute of Technology, Cambridge, MA 02139}
+\affil[b]{Operations Research Center, Massachusetts Institute of Technology, Cambridge, MA 02139}
 
 % Please give the surname of the lead author for the running footer
 \leadauthor{Chodrow} 
@@ -32,7 +36,7 @@
 \correspondingauthor{\textsuperscript{1}To whom correspondence should be addressed. E-mail: pchodrow@gmail.com}
 
 % Keywords are not mandatory, but authors are strongly encouraged to provide them. If provided, please include two to five keywords, separated by the pipe symbol, e.g:
-\keywords{Information Theory $|$ Diversity and Segregation $|$ Urban Theory $|$ ...} 
+\keywords{Information Theory $|$ Diversity and Segregation $|$ Urban Theory } 
 
 \begin{abstract}
 Please provide an abstract of no more than 250 words in a single paragraph. Abstracts should explain to the general reader the major contributions of the article. References in the abstract must be cited in full within the abstract itself and cited in the text.
@@ -54,62 +58,119 @@ Please provide an abstract of no more than 250 words in a single paragraph. Abst
 % If your first paragraph (i.e. with the \dropcap) contains a list environment (quote, quotation, theorem, definition, enumerate, itemize...), the line after the list may have some extra indentation. If this is the case, add \parshape=0 to the end of the list environment.
 \dropcap{I}nformation theory...blah blah blah. 
 
+	\begin{figure}%[tbhp]
+		\centering % need to center this
+		\includegraphics[width=\linewidth]{figs/checkerboard.pdf}
+		\caption{
+			Schematic cities illustrating three dimensions of segregation. 
+			City (a) lacks global diversity, while Cities (b)-(d) are maximally globally diverse. 
+			City (b) is perfectly spatially even, whereas Cities (c) and (d) are maximally uneven. 
+			City (d) has higher spatial exposure than City (c) due to more contact points between racially distinct neighborhoods.
+		} \label{fig:checkerboard}
+	\end{figure}
+
+
 \section*{Results}
 
-Narwhal blog poke, paleo post-ironic vegan fam butcher bushwick gastropub cardigan tofu listicle migas. Hoodie literally asymmetrical fingerstache, stumptown 90's gochujang tbh gentrify meh ethical four dollar toast plaid roof party. Bicycle rights kinfolk man braid disrupt XOXO. Leggings blue bottle post-ironic enamel pin tacos, hexagon brunch. Celiac 3 wolf moon kitsch tote bag bespoke pop-up. Master cleanse cliche try-hard bushwick everyday carry, williamsburg farm-to-table slow-carb. Paleo you probably haven't heard of them whatever typewriter normcore.
 
-Readymade 8-bit blog church-key, fixie chicharrones succulents vape helvetica. Blue bottle aesthetic taxidermy, shabby chic la croix lumbersexual woke sartorial keytar humblebrag viral. Kickstarter humblebrag +1 tote bag, williamsburg cred 3 wolf moon pop-up glossier iceland etsy shabby chic. Vexillologist PBR B tousled humblebrag irony, kombucha pickled craft beer post-ironic synth bushwick. Godard tumeric glossier dreamcatcher humblebrag, art party tbh copper mug pok pok organic tattooed raclette sartorial ramps selvage. Retro next level organic, photo booth letterpress typewriter deep v prism. Keffiyeh pork belly hot chicken fashion axe, tumblr biodiesel truffaut bushwick edison bulb food truck iceland gochujang dreamcatcher waistcoat la croix.
+	\begin{figure}
+			\includegraphics[width = .5\linewidth]{figs/Atlanta_percent_black.pdf}
+			\includegraphics[width = .5\linewidth]{figs/Philadelphia_percent_black.pdf} \\
+			\includegraphics[width = .5\linewidth]{figs/Atlanta_grid.pdf} 
+			\includegraphics[width = .5\linewidth]{figs/Philadelphia_grid.pdf} \\
 
-Fanny pack poutine trust fund cardigan. Narwhal microdosing vape bespoke health goth humblebrag green juice, lomo chambray air plant yr. Pickled gastropub vegan etsy. Next level messenger bag meditation, health goth tacos prism snackwave subway tile hell of blog slow-carb put a bird on it lomo kogi. Roof party fixie pok pok, cardigan prism next level woke lomo. Venmo butcher irony, single-origin coffee gastropub cliche tumblr. Fap pour-over banjo, freegan literally direct trade etsy.
+			\centering
+			\begin{tabular}{l | c c c c}
+				\bfseries City & Percent Black & $H(Y)$ & $I(X,Y)$ & $J(X,Y)$  \\\hline
+				\csvreader[late after line=\\]{figs/comparative_summary.csv}{}
+				{\csvcoli & \csvcolii & \csvcoliii & \csvcoliv & \csvcolv}
+			\end{tabular}
 
-Church-key chicharrones pitchfork distillery, selvage kogi neutra lumbersexual lyft vexillologist waistcoat shoreditch. Kombucha whatever pug microdosing pitchfork. Activated charcoal ethical affogato echo park. Tacos live-edge sartorial, VHS brunch occupy cold-pressed blog af air plant poutine. Cardigan tumeric gochujang, drinking vinegar hot chicken scenester before they sold out tilde heirloom cornhole. Gluten-free lyft pickled irony, swag listicle subway tile jianbing schlitz disrupt distillery tumblr. Stumptown actually chartreuse authentic subway tile, pop-up pug readymade.
+			\caption{
+				Spatial analysis of residential segregation in Atlanta (left) and Philadelphia (right). 
+				(\emph{Top}): Percentage of black residents. 
+				(\emph{Middle}): Hexgrid of spatial resolution 1km imposed over each city, shaded by the value of the local information $I(X,Y | X \in B_i)$. 
+				(\emph{Bottom}): Numerical summary, including the three information measures.
+			} \label{fig:Atlanta_philly}
+	\end{figure}
+
+
+	\begin{figure}
+		\includegraphics[width=\linewidth]{figs/mutual_fisher.pdf}
+		\caption{
+			Comparative global segregation measures in major U.S. cities, measured using racial categories $\mathcal{Y} = \{\text{Asian }, \text{Black }, \text{Hispanic }, \text{Other }, \text{White}\}$. 
+			We used a hexgrid of spatial resolution $r = 1$km for the computation of $J(X,Y)$.
+		} \label{fig:mutual_fisher}
+	\end{figure}
+
+
 
 \subsection*{Using some damn math} 
 There's lots of damn math we could use. 
 
+	\begin{figure}
+
+		\includegraphics[width = .5\linewidth]{figs/Atlanta_clusters_binary_6.pdf} 
+		\includegraphics[width = .5\linewidth]{figs/Philadelphia_clusters_binary_6.pdf} \\
+		\includegraphics[width = .5\linewidth]{figs/Atlanta_clusters_binary_20.pdf}
+		\includegraphics[width = .5\linewidth]{figs/Philadelphia_clusters_binary_20.pdf} \\
+		
+		\centering
+		\begin{tabular}{l | c c c}
+			\bfseries City  & $I(C_6, Y)$ & $I(C_{20},Y)$ & $I(X,Y)$ \\\hline
+			\csvreader[late after line=\\]{figs/clustering_summary.csv}{}
+			{\csvcoli & \csvcoliii & \csvcoliv & \csvcolii}
+		\end{tabular}
+		\caption{
+			Example clusterings in Atlanta and Philadelphia using \eqref{eq:cluster_opt}, using $6$ and $20$ clusters. 
+			The table below summarizes the between-groups mutual information captured by each cluster and compares it to the mutual information in the unaggregated blockgroup level data.
+		} \label{fig:clusterings}
+
+	\end{figure}
+
+	\begin{figure}
+		\centering
+			% \begin{subfigure}[b]{0.45\linewidth}
+			\includegraphics[width = .4\linewidth]{figs/example_cluster_map.pdf}
+			% \caption{} \label{subfig:detroit_map}
+			% \end{subfigure}
+			% \begin{subfigure}[b]{0.45\linewidth}
+			\includegraphics[width = .4\linewidth]{figs/example_clusters_detailed.pdf}
+			% \caption{} \label{subfig:detroit_groups}
+			% \end{subfigure}
+			\caption{
+				Multigroup sociospatial structure in Detroit. 
+				\ref{subfig:detroit_map}: Map of six clusters. 
+				\ref{subfig:detroit_groups}: Joint distribution of demographics and clusters. 
+				Shadings reflect population proportions within clusters. 
+				Numerical labels give raw population proportions; for example, 29\% of the population is Black and resides in cluster B. 
+				Detroit has $H(Y) = 1.12$, $I(X,Y) = 0.57$, and $J(X,Y) = 0.08$. 
+				This clustering captures $I(C_6,Y) = 0.36$ nats of information.
+			} \label{fig:detroit}
+	\end{figure}
+
+
+	\begin{figure}
+			\includegraphics[width=\linewidth]{figs/AUC_illustration.pdf}
+			\caption{
+				Evaluation of clusterings using the area under the curve (AUC) for $\mathcal{Y} = \{\text{Black }, \text{Non-Black}\}$, computed according to the formula \eqref{eq:AUC_formula}. 
+				The bounding rectangle for each city is shown in grey. 
+				The AUC is the proportion of the rectangle contained in the shaded region. 
+				The AUC for Philadelphia has been adjusted to account for the data set's two disconnected geographic components.
+			} \label{fig:AUC}
+	\end{figure}
+	\begin{figure}
+		\centering
+		\input{figs/adjusted_regression.txt}
+		\caption{
+			Regression of the AUC computed by \eqref{eq:AUC_formula} on the information measures $H(Y)$, $I(X,Y)$, and $J(X,Y)$. 
+			95\% confidence intervals for each of the determined coefficients are shown in parentheses. 
+			The three information measures jointly explain an adjusted 75\% of the variation in the AUC. 
+		}\label{fig:regression}
+	\end{figure}
+
 \section*{Discussion}
 
-Narwhal blog poke, paleo post-ironic vegan fam butcher bushwick gastropub cardigan tofu listicle migas. Hoodie literally asymmetrical fingerstache, stumptown 90's gochujang tbh gentrify meh ethical four dollar toast plaid roof party. Bicycle rights kinfolk man braid disrupt XOXO. Leggings blue bottle post-ironic enamel pin tacos, hexagon brunch. Celiac 3 wolf moon kitsch tote bag bespoke pop-up. Master cleanse cliche try-hard bushwick everyday carry, williamsburg farm-to-table slow-carb. Paleo you probably haven't heard of them whatever typewriter normcore.
-
-Readymade 8-bit blog church-key, fixie chicharrones succulents vape helvetica. Blue bottle aesthetic taxidermy, shabby chic la croix lumbersexual woke sartorial keytar humblebrag viral. Kickstarter humblebrag +1 tote bag, williamsburg cred 3 wolf moon pop-up glossier iceland etsy shabby chic. Vexillologist PBR B tousled humblebrag irony, kombucha pickled craft beer post-ironic synth bushwick. Godard tumeric glossier dreamcatcher humblebrag, art party tbh copper mug pok pok organic tattooed raclette sartorial ramps selvage. Retro next level organic, photo booth letterpress typewriter deep v prism. Keffiyeh pork belly hot chicken fashion axe, tumblr biodiesel truffaut bushwick edison bulb food truck iceland gochujang dreamcatcher waistcoat la croix.
-
-Fanny pack poutine trust fund cardigan. Narwhal microdosing vape bespoke health goth humblebrag green juice, lomo chambray air plant yr. Pickled gastropub vegan etsy. Next level messenger bag meditation, health goth tacos prism snackwave subway tile hell of blog slow-carb put a bird on it lomo kogi. Roof party fixie pok pok, cardigan prism next level woke lomo. Venmo butcher irony, single-origin coffee gastropub cliche tumblr. Fap pour-over banjo, freegan literally direct trade etsy.
-
-Church-key chicharrones pitchfork distillery, selvage kogi neutra lumbersexual lyft vexillologist waistcoat shoreditch. Kombucha whatever pug microdosing pitchfork. Activated charcoal ethical affogato echo park. Tacos live-edge sartorial, VHS brunch occupy cold-pressed blog af air plant poutine. Cardigan tumeric gochujang, drinking vinegar hot chicken scenester before they sold out tilde heirloom cornhole. Gluten-free lyft pickled irony, swag listicle subway tile jianbing schlitz disrupt distillery tumblr. Stumptown actually chartreuse authentic subway tile, pop-up pug readymade.
-
-
-
-Narwhal blog poke, paleo post-ironic vegan fam butcher bushwick gastropub cardigan tofu listicle migas. Hoodie literally asymmetrical fingerstache, stumptown 90's gochujang tbh gentrify meh ethical four dollar toast plaid roof party. Bicycle rights kinfolk man braid disrupt XOXO. Leggings blue bottle post-ironic enamel pin tacos, hexagon brunch. Celiac 3 wolf moon kitsch tote bag bespoke pop-up. Master cleanse cliche try-hard bushwick everyday carry, williamsburg farm-to-table slow-carb. Paleo you probably haven't heard of them whatever typewriter normcore.
-
-Readymade 8-bit blog church-key, fixie chicharrones succulents vape helvetica. Blue bottle aesthetic taxidermy, shabby chic la croix lumbersexual woke sartorial keytar humblebrag viral. Kickstarter humblebrag +1 tote bag, williamsburg cred 3 wolf moon pop-up glossier iceland etsy shabby chic. Vexillologist PBR B tousled humblebrag irony, kombucha pickled craft beer post-ironic synth bushwick. Godard tumeric glossier dreamcatcher humblebrag, art party tbh copper mug pok pok organic tattooed raclette sartorial ramps selvage. Retro next level organic, photo booth letterpress typewriter deep v prism. Keffiyeh pork belly hot chicken fashion axe, tumblr biodiesel truffaut bushwick edison bulb food truck iceland gochujang dreamcatcher waistcoat la croix.
-
-Fanny pack poutine trust fund cardigan. Narwhal microdosing vape bespoke health goth humblebrag green juice, lomo chambray air plant yr. Pickled gastropub vegan etsy. Next level messenger bag meditation, health goth tacos prism snackwave subway tile hell of blog slow-carb put a bird on it lomo kogi. Roof party fixie pok pok, cardigan prism next level woke lomo. Venmo butcher irony, single-origin coffee gastropub cliche tumblr. Fap pour-over banjo, freegan literally direct trade etsy.
-
-Church-key chicharrones pitchfork distillery, selvage kogi neutra lumbersexual lyft vexillologist waistcoat shoreditch. Kombucha whatever pug microdosing pitchfork. Activated charcoal ethical affogato echo park. Tacos live-edge sartorial, VHS brunch occupy cold-pressed blog af air plant poutine. Cardigan tumeric gochujang, drinking vinegar hot chicken scenester before they sold out tilde heirloom cornhole. Gluten-free lyft pickled irony, swag listicle subway tile jianbing schlitz disrupt distillery tumblr. Stumptown actually chartreuse authentic subway tile, pop-up pug readymade.
-
-% \subsubsection*{Different table}
-
-% Supply Word, RTF, or LaTeX files (LaTeX files must be accompanied by a PDF with the same file name for visual reference); include only one table per file. Do not use tabs or spaces to separate columns in Word tables.
-
-% \subsubsection*{Different table}
-
-% Supply Word, RTF, or LaTeX files (LaTeX files must be accompanied by a PDF with the same file name for visual reference); include only one table per file. Do not use tabs or spaces to separate columns in Word tables.
-
-% \subsubsection*{SI Datasets} 
-
-% Supply Excel (.xls), RTF, or PDF files. This file type will be published in raw format and will not be edited or composed. 
-
-% \subsubsection*{SI Movies}
-
-% Supply Audio Video Interleave (avi), Quicktime (mov), Windows Media (wmv), animated GIF (gif), or MPEG files and submit a brief legend for each movie in a Word or RTF file. All movies should be submitted at the desired reproduction size and length. Movies should be no more than 10 MB in size. 
-
-% \subsubsection{Still images}
-
-% Authors must provide a still image from each video file. Supply TIFF, EPS, high-resolution PDF, JPEG, or GIF files. 
-
-% \subsubsection*{Appendices}
-
-% PNAS prefers that authors submit individual source files to ensure readability. If this is not possible, supply a single PDF file that contains all of the SI associated with the paper. This file type will be published in raw format and will not be edited or composed.
 
 \matmethods{Please describe your materials and methods here. This can be more than one paragraph, and may contain subsections and equations as required. Authors should include a statement in the methods section describing how readers will be able to access the data in the paper. 
 
@@ -129,7 +190,9 @@ Example text for subsection.
 % as it can run into problems with floats and footnotes on the final page.
 % \pnasbreak
 
+\nocite{Bettencourt2013}
+
 % Bibliography
-\bibliography{pnas-sample}
+\bibliography{/Users/phil/bibs/library.bib}
 
 \end{document}
