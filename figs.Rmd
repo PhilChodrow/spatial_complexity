@@ -818,8 +818,8 @@ for(city in c('Philadelphia', 'Atlanta')){
   	ggsave(paste0('figs/', city, '_clusters_binary_', nclusters, '.pdf'), width = 7, height = 7, units = 'cm')
   	embed_fonts(paste0('figs/', city, '_clusters_binary_', nclusters, '.pdf'),
   	            outfile = paste0('figs/', city, '_clusters_binary_', nclusters, '.pdf'))
-  tab <- rbind(tab, new_row)
 	}
+  tab <- rbind(tab, new_row)
 }
   
 tab %>% 
@@ -934,7 +934,7 @@ tab[,-1] <- round(tab[,-1],2)
 
 tab %>% 
   mutate(percent_black = percent_black * 100) %>%   
-  write_csv('figs/comparative_summary.csv')
+  write_csv('figs/batch_figs/comparative_summary.csv')
 
 ```
 
@@ -967,8 +967,8 @@ for(city in cities){
   	ggsave(paste0('figs/batch_figs/', city, '_clusters_binary_', nclusters, '.pdf'), width = 7, height = 7, units = 'cm')
   	embed_fonts(paste0('figs/batch_figs/', city, '_clusters_binary_', nclusters, '.pdf'),
   	            outfile = paste0('figs/batch_figs/', city, '_clusters_binary_', nclusters, '.pdf'))
-  tab <- rbind(tab, new_row)
 	}
+  tab <- rbind(tab, new_row)
 }
   
 tab %>% 
