@@ -1,3 +1,57 @@
 city,percent_black,H_Y,I_XY,J_XY
-Philadelphia,41,0.68,0.32,0.06
+Albuquerque,2,0.11,0.02,0.01
 Atlanta,47,0.69,0.34,0.03
+Austin,7,0.25,0.05,0.01
+Bakersfield,5,0.2,0.04,0.01
+Baltimore,61,0.67,0.31,0.07
+Boston,19,0.48,0.19,0.03
+Charlotte,30,0.61,0.16,0.02
+Chicago,23,0.54,0.34,0.04
+Cleveland,29,0.6,0.31,0.03
+Colorado Springs,5,0.21,0.03,0.01
+Columbus,20,0.5,0.17,0.03
+Dallas,16,0.44,0.13,0.02
+Denver,9,0.31,0.07,0.02
+Detroit,39,0.67,0.41,0.04
+El Paso,3,0.13,0.03,0.01
+Fort Worth,15,0.41,0.11,0.02
+Fresno,5,0.19,0.04,0.01
+Honolulu,2,0.09,0.02,0.01
+Houston,17,0.46,0.14,0.02
+Indianapolis,26,0.57,0.18,0.03
+Jacksonville,28,0.59,0.19,0.02
+Jersey City,11,0.34,0.13,0.03
+Kansas City,16,0.44,0.17,0.02
+Las Vegas,10,0.32,0.05,0.02
+Los Angeles,8,0.27,0.08,0.02
+Louisville,20,0.5,0.18,0.03
+Memphis,51,0.69,0.3,0.04
+Miami,17,0.45,0.23,0.03
+Milwaukee,25,0.56,0.29,0.03
+Minneapolis,11,0.35,0.1,0.03
+Nashville,27,0.58,0.17,0.03
+Newark,38,0.66,0.33,0.04
+New Orleans,58,0.68,0.3,0.07
+New York City,23,0.53,0.24,0.04
+Oakland,11,0.34,0.08,0.02
+Oklahoma City,10,0.33,0.1,0.02
+Omaha,11,0.34,0.13,0.02
+Philadelphia,40,0.67,0.32,0.06
+Phoenix,5,0.19,0.04,0.01
+Pittsburgh,13,0.38,0.16,0.03
+Portland,5,0.2,0.04,0.01
+Providence,7,0.26,0.05,0.02
+Raleigh,20,0.5,0.11,0.02
+Richmond,47,0.69,0.24,0.04
+Sacramento,9,0.3,0.04,0.01
+San Antonio,7,0.25,0.05,0.01
+San Diego,5,0.18,0.03,0.01
+San Francisco,5,0.21,0.05,0.02
+San Jose,2,0.11,0.02,0.01
+Seattle,6,0.22,0.05,0.02
+St. Louis,47,0.69,0.33,0.05
+Tampa,15,0.43,0.11,0.02
+Tucson,3,0.14,0.02,0.01
+Virginia Beach,18,0.47,0.07,0.02
+Washington DC,48,0.69,0.31,0.04
+Wichita,9,0.3,0.1,0.02
