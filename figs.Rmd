@@ -52,35 +52,38 @@ The checkerboard problem is a foundational issue in the spatial analysis of dive
 
 ```{r, fig.height=3}
 
-checkerboard_illustration <- function(){
-	expand.grid(x = 1:8, y = 1:8) %>%
-		mutate(`(a)` = 1,
-			   `(b)` = .5,
-			   `(c)` = (x > 4)*1,
-			   `(d)` = (x + y) %% 2) %>%
-		gather(key = model, value = p, -x, -y) %>%
-		ggplot(aes(x = x, y = y)) +
-		ggthemes::theme_map() +
-    geom_tile(aes(fill = p)) +
-		scale_fill_continuous(low = 'white', high = 'black ', limits=c(0,1)) +
-		facet_grid(~model, switch = 'x') +
-		xlab('') +
-		ylab('') +
-		guides(fill=FALSE) + 
-		theme(axis.ticks = element_blank(),
-			  axis.text.x = element_blank(),
-			  axis.text.y = element_blank(),
-			  panel.margin = unit(1, "mm"),
-			  panel.background = element_rect(),
-			  panel.grid.major = element_line(size = 0),
-			  panel.grid.minor = element_line(size = 0),
-			  strip.background = element_rect(fill = "white", color = "white", size = 2),
-			  plot.margin=unit(c(1,1,0,0),"mm"),
-			  strip.text=element_text(vjust=-100))
-}
+overlay <- data.frame(x = 6.5, y = 4.5)
 
-g <- checkerboard_illustration() 
-g
+
+expand.grid(x = 1:8, y = 1:8) %>%
+	mutate(`(a)` = 1,
+		   `(b)` = .5,
+		   `(c)` = (x > 4)*1,
+		   `(d)` = (x + y) %% 2) %>%
+	gather(key = model, value = p, -x, -y) %>%
+	ggplot(aes(x = x, y = y)) +
+	ggthemes::theme_map() +
+  geom_tile(aes(fill = p)) +
+	scale_fill_continuous(low = 'white', high = 'black ', limits=c(0,1)) +
+	facet_grid(~model, switch = 'x') +
+	xlab('') +
+	ylab('') +
+	guides(fill=FALSE) + 
+	theme(axis.ticks = element_blank(),
+		  axis.text.x = element_blank(),
+		  axis.text.y = element_blank(),
+		  panel.margin = unit(1, "mm"),
+		  panel.background = element_rect(),
+		  panel.grid.major = element_line(size = 0),
+		  panel.grid.minor = element_line(size = 0),
+		  strip.background = element_rect(fill = "white", color = "white", size = 2),
+		  plot.margin=unit(c(1,1,0,0),"mm"),
+		  strip.text=element_text(vjust=-100)) + 
+  geom_tile(aes(x = x, y = y), color = 'red', alpha = 0, size = 0.5, data = overlay)
+
+
+# g <- checkerboard_illustration() 
+# g
 # g + theme(text=element_text(size=10, family="Palatino"))
 ggsave('figs/checkerboard.pdf', width = 4, height = 1.3)
 embed_fonts("figs/checkerboard.pdf", outfile="figs/checkerboard.pdf")
