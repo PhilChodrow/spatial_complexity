@@ -445,7 +445,7 @@ sub_curves %>%
 	scale_x_continuous(trans = 'log10', limit = c(1, NA)) +
 	scale_y_continuous(limit = c(0,max(sub_curves$I_XY))) +
 	theme_minimal() +
-  theme(text=element_text(size=16, family="Palatino")) + 
+  theme(text=element_text(size=16)) + 
 	annotation_logticks(size = .1, sides = 'b', scaled = T) + 
 	geom_rect(data = rects, aes(xmin = xmin,
 								ymin = ymin,
@@ -456,11 +456,12 @@ sub_curves %>%
 			  alpha = 0) +
 	# geom_text(aes(x = nclust, y = I_XY, label = city, hjust = -.2), data = end_points) + 
 	geom_polygon(aes(nclust, I_XY, fill = city), data = filled, alpha = .2) + 
-	geom_text(aes(x = 50, y = .2, label = paste('AUC = ', round(AUC,2))), data = sub_summary, family = 'Palatino') + 
+	geom_text(aes(x = 50, y = .2, label = paste('AUC = ', round(AUC,2))), data = sub_summary) + 
 	# geom_text(aes(x = 50, y = .1, label = paste('J(X,Y) = ', round(J_XY,2))), data = sub_summary) +
 	facet_wrap(~city) + 
-	scale_fill_discrete(guide = F) + 
-	scale_color_discrete(guide = F) + 
+  scale_fill_brewer(palette = 'Set1', name = NULL, guide = 'none') +
+  scale_color_brewer(palette = 'Set1', name = NULL, guide = 'none') + 
+	# scale_color_discrete(guide = F) + 
 	xlab('Number of clusters') + 
 	ylab('I(C,Y)') + 
 	ggtitle('AUC as Clustering Evaluation')
@@ -494,12 +495,12 @@ end_points <- highlighted %>%
 
 background %>% 
   ggplot(aes(x = nclust, y = I_XY)) +
-  geom_path(aes(group = city), color = 'grey') + 
+  geom_path(aes(group = city), color = 'grey', alpha = 0.6) + 
   geom_path(aes(group = city, color = city), data = highlighted) +
   geom_text_repel(aes(label = city, color = city), data = end_points) +
-  scale_x_continuous(trans = 'log10') +
-  scale_y_continuous(limits = c(0,.5)) + 
   theme_light() +
+  scale_x_continuous(trans = 'log10', limits = c(1,NA)) +
+  scale_y_continuous(limits = c(0,.5)) + 
   scale_color_brewer(palette = 'Set1', name = NULL, guide = 'none') +
   xlab('Number of clusters (n)') + 
 	ylab(expression(I(C[n],Y))) +
@@ -775,7 +776,7 @@ cluster_map_percent_black <- function(tracts_name, city, nclusters = 10){
 	                              guide = guide) + 
 	  ggtitle(title) + 
 		geom_polygon(aes(x = long, y= lat, group = group), data = to_overlay, fill = NA, size = .3, color = 'black') + 
-	  theme(text=element_text(size=16, family="Palatino"),
+	  theme(text=element_text(size=16),
 	        legend.justification=c(0,0), legend.position=c(.65,0),
           legend.title = element_text(size = 8),
           plot.title = element_text(size=10, vjust=1))
