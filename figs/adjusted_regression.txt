@@ -1,6 +1,6 @@
 
 % Table created by stargazer v.5.2 by Marek Hlavac, Harvard University. E-mail: hlavac at fas.harvard.edu
-% Date and time: Sun, Oct 23, 2016 - 11:25:58 AM
+% Date and time: Thu, Nov 03, 2016 - 05:43:48 PM
 \begin{tabular}{@{\extracolsep{5pt}}lc} 
 \\[-1.8ex]\hline 
 \hline \\[-1.8ex] 
@@ -8,20 +8,20 @@
 \cline{2-2} 
 \\[-1.8ex] & AUC \\ 
 \hline \\[-1.8ex] 
- $H(Y)$ & $-$0.189$^{***}$ \\ 
-  & ($-$0.296, $-$0.081) \\ 
-  $I(X,Y)$ & 0.453$^{***}$ \\ 
-  & (0.376, 0.529) \\ 
-  $J(X,Y)$ & $-$0.130$^{***}$ \\ 
-  & ($-$0.216, $-$0.045) \\ 
+ $H(Y)$ & $-$0.188$^{***}$ \\ 
+  & ($-$0.295, $-$0.081) \\ 
+  $I(X,Y)$ & 0.454$^{***}$ \\ 
+  & (0.377, 0.531) \\ 
+  $J(X,Y)$ & $-$0.133$^{***}$ \\ 
+  & ($-$0.219, $-$0.047) \\ 
   Intercept & 0.803$^{***}$ \\ 
   & (0.725, 0.880) \\ 
  \hline \\[-1.8ex] 
 Observations & 56 \\ 
 R$^{2}$ & 0.765 \\ 
 Adjusted R$^{2}$ & 0.751 \\ 
-Residual Std. Error & 0.040 (df = 52) \\ 
-F Statistic & 56.315$^{***}$ (df = 3; 52)  (p = 0.000) \\ 
+Residual Std. Error & 0.039 (df = 52) \\ 
+F Statistic & 56.434$^{***}$ (df = 3; 52)  (p = 0.000) \\ 
 \hline 
 \hline \\[-1.8ex] 
 \textit{Note:}  & \multicolumn{1}{r}{$^{*}$p$<$0.1; $^{**}$p$<$0.05; $^{***}$p$<$0.01} \\ 

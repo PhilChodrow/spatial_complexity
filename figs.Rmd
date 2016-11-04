@@ -7,6 +7,7 @@ output:
     toc: true
     toc_float: true
     theme: simplex
+    code_folding: hide
 ---
 
 ```{r warning = FALSE, message = FALSE, echo = FALSE}
@@ -33,6 +34,10 @@ loadfonts()
 
 columns = c('Asian', 'Black', 'Other', 'White', 'Hispanic')
 
+if(!dir.exists('figs')){
+  dir.create('figs')
+}
+
 ```
 
 # Purpose 
@@ -42,6 +47,8 @@ The purpose of this document is to generate the figures used in this project. It
 # Methods
 
 ## Motivation
+
+The checkerboard problem is a foundational issue in the spatial analysis of diversity; it demonstrates the modifiable areal units problem (maup)
 
 ```{r, fig.height=3}
 
@@ -54,6 +61,12 @@ checkerboard_illustration <- function(){
 		gather(key = model, value = p, -x, -y) %>%
 		ggplot(aes(x = x, y = y)) +
 		ggthemes::theme_map() +
+    geom_tile(aes(fill = p)) +
+		scale_fill_continuous(low = 'white', high = 'black ', limits=c(0,1)) +
+		facet_grid(~model, switch = 'x') +
+		xlab('') +
+		ylab('') +
+		guides(fill=FALSE) + 
 		theme(axis.ticks = element_blank(),
 			  axis.text.x = element_blank(),
 			  axis.text.y = element_blank(),
@@ -62,114 +75,20 @@ checkerboard_illustration <- function(){
 			  panel.grid.major = element_line(size = 0),
 			  panel.grid.minor = element_line(size = 0),
 			  strip.background = element_rect(fill = "white", color = "white", size = 2),
-			  plot.margin=unit(c(0,1,0,0),"mm")) +
-		geom_tile(aes(fill = p)) +
-		scale_fill_continuous(low = 'white', high = 'black ', limits=c(0,1)) +
-		facet_grid(~model) +
-		xlab('') +
-		ylab('') +
-		guides(fill=FALSE)
+			  plot.margin=unit(c(1,1,0,0),"mm"),
+			  strip.text=element_text(vjust=-100))
 }
 
 g <- checkerboard_illustration() 
+g
 # g + theme(text=element_text(size=10, family="Palatino"))
 ggsave('figs/checkerboard.pdf', width = 4, height = 1.3)
 embed_fonts("figs/checkerboard.pdf", outfile="figs/checkerboard.pdf")
 ```
 
-## Methodological illustration
-```{r, warning = FALSE, message = FALSE}
-columns <- c('Black', 'Hispanic', 'Asian', 'White', 'Other')
-method_illustration <- function(city, vmax){
-	hexgrid <- readOGR(dsn = paste0('throughput/grids/',city), layer = 'geo', verbose = FALSE)
-	df <- hexgrid@data
-	df <- df %>% mutate(id = as.character(row_number()))
-	hexgrid <- fortify(hexgrid) %>%
-		left_join(df, by = c('id' = 'id'))
-	bbox <- c(min(hexgrid$long), min(hexgrid$lat), max(hexgrid$long), max(hexgrid$lat))
-	
-	# squarify
-	max_range <- max(bbox[3] - bbox[1], bbox[4] - bbox[2])
-	
-	long_mid <- (bbox[3] + bbox[1]) / 2
-	lat_mid  <- (bbox[2] + bbox[4]) / 2
-	
-	bbox[1] <- long_mid - max_range / 2
-	bbox[3] <- long_mid + max_range / 2
-	bbox[2] <- lat_mid  - max_range / 2
-	bbox[4] <- lat_mid  + max_range / 2
-	
-	map <- get_map(location = bbox, maptype = 'terrain-background')
-
-	p <- ggmap(map,darken = .5)
-	p <- p +
-		geom_polygon(data = hexgrid, aes(x = long, y = lat, group = group, fill = info), alpha = .8) +
-		scale_fill_continuous(low = 'white', high = 'steelblue', name= expression(J[Y](x)), limits = c(0, vmax), breaks = c(0,2,4,6)) +
-		theme(axis.ticks = element_blank(),
-			  axis.text.x = element_blank(),
-			  axis.text.y = element_blank()) +
-		xlab('') +
-		ylab('') +
-		theme(text=element_text(size=16, family="Palatino"),
-		    legend.justification=c(.8,0),
-			  legend.position=c(1,0),
-			  legend.background = element_rect(fill = alpha('blue', 0)),
-			  legend.title = element_text(colour="white"),
-			  legend.text = element_text(colour="white"),
-			  legend.key.size = unit(2, "mm"),
-			  legend.text = element_text(size = rel(.1))) +
-		ggtitle(paste0('Local Information in ', city, '\nJ(X,Y) = ', round(weighted.mean(df$info, df$density), 2)))
-	p
-}
-
-
-
-
-# first <- method_illustration('Detroit', vmax = 6)
-# second <- method_illustration('Philadelphia', vmax = 6)
-# 
-# gA <- ggplotGrob(first)
-# gB <- ggplotGrob(second)
-# g <- gridExtra::cbind.gtable(gA, gB, size = "max")
-# 
-# grid.draw(g)
-# 
-# ggsave('figs/method_illustration.pdf', g, width = 8, height = 5)
-
-```
-
-```{r additive_decomposability}
-
-expand.grid(x = 1:8, y = 1:8) %>% 
-	mutate(`(e)` = .5,
-		   `(e)` = ifelse(x %in% 2:4 & y %in% 2:7, 0, `(e)`),
-		   `(e)` = ifelse(x %in% 5:7 & y %in% 2:7, 1, `(e)`),
-		   `(f)` = .5) %>%
-	gather(key = model, value = p, -x, -y) %>%
-	ggplot(aes(x = x, y = y)) +
-		theme_minimal() +
-		theme(axis.ticks = element_blank(),
-			  axis.text.x = element_blank(),
-			  axis.text.y = element_blank(),
-			  panel.background = element_rect(),
-			  panel.grid.major = element_line(size = 0),
-			  panel.grid.minor = element_line(size = 0),
-			  plot.margin=unit(c(0,0,0,0),"mm")) +
-		geom_tile(aes(fill = p)) +
-		scale_fill_continuous(low = 'white', high = 'black ', limits=c(0,1)) +
-		facet_grid(~model) +
-		xlab('') +
-		ylab('') +
-		guides(fill=FALSE)
-
-ggsave('figs/decomposability.pdf', width = 2.5, height = 1.5)
-
-```
-
-
-
 #  Mean Local Information
 
+We'll read in some of the measures that we've computed:
 ```{r}
 
 cache <- read_csv('throughput/info_cache.csv')
@@ -184,16 +103,20 @@ highlight <- cache %>%
 
 cache %>%
 	ggplot(aes(x = I_XY, y = J_XY)) + 
-	geom_point(color = 'grey') + 
+	geom_point(color = 'firebrick', alpha = 0.2) + 
 	theme_light() + 
 	ylab(expression(J(X,Y))) + 
 	xlab(expression(I(X,Y))) + 
+  geom_smooth(method = 'lm', se = FALSE, color = 'grey', linetype = 1, alpha = 0.2) + 
 	# ggtitle('Mutual information and mean local information in major US cities') +
 	geom_point(data = highlight, color = 'firebrick') + 
-	geom_text_repel(data = highlight, aes(label = city), family = 'Palatino' ) + 
-  theme(text=element_text(size=16, family="Palatino"),
+	geom_text_repel(data = highlight, aes(label = city)
+	                # , family = 'Palatino' 
+	                ) + 
+  theme(
+    # text=element_text(size=16, family="Palatino"),
         legend.title = element_text(size = 8),
-        plot.title = element_text(size=10, vjust=1))
+        plot.title = element_text(size=10, vjust=1)) 
 
 ggsave('figs/mutual_fisher.pdf', width = 7, height = 4)
 embed_fonts("figs/mutual_fisher.pdf", outfile="figs/mutual_fisher.pdf")
@@ -203,6 +126,8 @@ embed_fonts("figs/mutual_fisher.pdf", outfile="figs/mutual_fisher.pdf")
 
 
 ## Relationship to population density
+
+This is pretty interesting but we need to learn more
 ```{r}
 lm_eqn <- function(df){
 	m <- lm(J_XY ~ log(density) + I_XY, data = df) 
@@ -219,14 +144,14 @@ cache %>%
 	# filter(!grepl('Los Angeles', city)) %>%
 	ggplot(aes(x = density, y = J_XY)) +
 	geom_smooth(method = 'lm', se = FALSE, color = 'black', size = .4) +
-	annotate('text', x = 300, y = .12, label = lm_eqn(cache), parse = T, family = 'Palatino') + 
+	annotate('text', x = 300, y = .12, label = lm_eqn(cache), parse = T) + 
 	geom_point(color = 'grey') + 
 	geom_point(color = 'firebrick', data = highlight) + 
-	geom_text_repel(aes(label = city), size = 3, data = highlight, family = 'Palatino' ) +
+	geom_text_repel(aes(label = city), size = 3, data = highlight) +
 	scale_x_continuous(trans = 'log10') +
 	# scale_y_continuous(trans = 'log10') +
 	theme_light() +
-  theme(text=element_text(size=16, family="Palatino")) + 
+  theme(text=element_text(size=16)) + 
 	xlab(expression(rho~(population/km^{2}))) +
 	ylab(expression(J(X,Y))) +
 	annotation_logticks(size = .1, sides = 'b') 
@@ -241,37 +166,37 @@ embed_fonts("figs/density_fisher.pdf", outfile="figs/density_fisher.pdf")
 
 ```{r}
 # Table --------
-
-tab <- cache %>% 
-	select(area, population, H_Y, I_XY, J = J_XY) %>% 
-	mutate(Density = population / area) %>% 
-	round(2) %>%
-	cbind(cache$city, .) %>%
-	rename(City = `cache$city`, 
-		   `Area` = area,
-		   Population = population,
-		   HY = H_Y,
-		   IXY = I_XY) %>%
-	arrange(desc(Density)) %>% 
-	select(City, `Area`, Population, Density, HY, IXY, J)
-
-tab %>% write_csv('figs/table.csv')
-
-tab %>% select(City, HY, IXY, J) %>% 
-	filter(City %in% c( 'Albuquerque', 'Detroit', 'Philadelphia')) %>% 
-	arrange(City) %>%
-	mutate(HY = sprintf("%.2f", HY),
-		   IXY = sprintf("%.2f", IXY),
-		   J = sprintf("%.2f", J)) %>% 
-	write_csv('figs/mini_table.csv')
-
-
-tab$Population <- format(tab$Population, big.mark=",", scientific=FALSE)
-tab$Area <- format(tab$Area, big.mark=",", scientific=FALSE)
-tab$Density <- format(tab$Density, big.mark=",", scientific=FALSE)
-
-datatable(tab, options = list(pageLength = 10), rownames = FALSE,
-		  caption = 'Table 1: This is a simple caption for the table.')
+# 
+# tab <- cache %>% 
+# 	select(area, population, H_Y, I_XY, J = J_XY) %>% 
+# 	mutate(Density = population / area) %>% 
+# 	round(2) %>%
+# 	cbind(cache$city, .) %>%
+# 	rename(City = `cache$city`, 
+# 		   `Area` = area,
+# 		   Population = population,
+# 		   HY = H_Y,
+# 		   IXY = I_XY) %>%
+# 	arrange(desc(Density)) %>% 
+# 	select(City, `Area`, Population, Density, HY, IXY, J)
+# 
+# tab %>% write_csv('figs/table.csv')
+# 
+# tab %>% select(City, HY, IXY, J) %>% 
+# 	filter(City %in% c( 'Albuquerque', 'Detroit', 'Philadelphia')) %>% 
+# 	arrange(City) %>%
+# 	mutate(HY = sprintf("%.2f", HY),
+# 		   IXY = sprintf("%.2f", IXY),
+# 		   J = sprintf("%.2f", J)) %>% 
+# 	write_csv('figs/mini_table.csv')
+# 
+# 
+# tab$Population <- format(tab$Population, big.mark=",", scientific=FALSE)
+# tab$Area <- format(tab$Area, big.mark=",", scientific=FALSE)
+# tab$Density <- format(tab$Density, big.mark=",", scientific=FALSE)
+# 
+# # datatable(tab, options = list(pageLength = 10), rownames = FALSE,
+# 		  # caption = 'Table 1: This is a simple caption for the table.')
 
 ```
 
@@ -318,7 +243,7 @@ cluster_map <- function(tracts_name, city, nclusters = 10){
 		geom_polygon(aes(x = long, y = lat, group = group, fill = factor(cluster))) + 
 		scale_fill_brewer(palette = 'Set3', name = NULL, guide = 'none') + 
 		# ggtitle(paste0('Example clustering for ', city)) + 
-		theme_minimal() +
+		ggthemes::theme_map() +
 		theme(axis.ticks = element_blank(),
 			  axis.text = element_blank(),
 			  axis.title = element_blank(),
@@ -332,7 +257,7 @@ columns = c('Black', 'White', 'Asian', 'Hispanic', 'Other')
 
 cluster_map('Detroit', 'Detroit', nclusters = 6)
 
-ggsave('figs/example_cluster_map.pdf',  width = 7, height = 7)
+ggsave('figs/example_cluster_map.pdf',  width = 7, height = 5)
 
 ```
 
@@ -402,10 +327,11 @@ make_cluster_groups('Detroit', 6) %>%
   scale_fill_brewer(palette = 'Set3', name = NULL, guide = 'none', labels = LETTERS[1:nclusters]) + 
 	geom_tile(color = 'black',  aes(alpha = alpha), size = 1) + 
 	geom_text(aes(
-		label = ifelse(p < 0.005, "", 100 * round(p,2))), size = 8, family = 'Palatino') + 
+		label = ifelse(p < 0.005, "", 100 * round(p,2))), size = 8) + 
   scale_alpha_continuous(guide = 'none', limits = c(0, .3)) + 
 	theme_minimal() + 
-	theme(text=element_text(size=25, family="Palatino"),
+	theme(
+	  text=element_text(size=25),
 		  axis.ticks.x = element_blank(),
 		  axis.title = element_blank(),
 		  legend.position="bottom",
@@ -450,95 +376,18 @@ clusters <- readRDS(paste0('throughput/clusterings/', city))
 
 tracts@data$cluster <- cutree(clusters,nclusters)
 overlay <- unionSpatialPolygons(tracts, IDs = tracts@data$cluster)
-plot(overlay)
 
 sapply(slot(overlay, "polygons"), slot, "area")  %>% simplex_normalize()
 
 
 ```
 
-
-
-## Loss curves
-
-```{r}
-end_points <- loss_curves %>%
-	group_by(city) %>%
-	filter(nclust == max(nclust)) %>% 
-	filter(J_XY > 1.25 | J_XY < .75)
-
-loss_curves %>% 
-	ggplot() +
-	aes(x = nclust, y = I_XY, group = city) +
-	geom_path(aes(color = J_XY)) +
-	# geom_point(aes(color = J_XY), size = .3) +
-	scale_x_continuous(trans = 'log10', limits = c(1, max(loss_curves$nclust) + 1000)) +
-	# scale_y_continuous(trans = 'log10') +
-	geom_text(aes(x = nclust, y = I_XY, label = city, hjust = -.2), data = end_points) +
-	theme_minimal() +
-	scale_color_continuous(low = 'white', high = 'firebrick',limits = c(0,2)) +
-	annotation_logticks(size = .1, sides = 'b') +
-	ggtitle('Loss curves for spatially-constrained information-theoretic clustering')
-
-ggsave('figs/loss_curves.pdf', width = 10, height = 6)
-
-```
-
-```{r}
-end_points <- loss_curves %>%
-	group_by(city) %>%
-	filter(nclust == max(nclust))
-
-loss_curves %>% 
-	group_by(city) %>% 
-	mutate(I_max = max(I_XY)) %>% 
-	ggplot() +
-	aes(x = nclust, y = I_XY, group = city) +
-	geom_path(aes(color = I_max)) +
-	# geom_point(aes(color = J_XY), size = .3) +
-	scale_x_continuous(trans = 'log10', limits = c(1, max(loss_curves$nclust) + 1000)) +
-	# scale_y_continuous(trans = 'log10') +
-	geom_text(aes(x = nclust, y = I_XY, label = city, hjust = -.2), data = end_points) +
-	theme_minimal() +
-	annotation_logticks(size = .1, sides = 'b') +
-	ggtitle('Loss curves for spatially-constrained information-theoretic clustering')
-
-
-```
-
-
-
-## Normalized loss curves:
-
-```{r}
-
-process_loss_curves <- function(loss_curves){
-  loss_curves %>%
-  	group_by(city) %>%
-  	mutate(I_XY = I_XY / max(I_XY)) %>%
-  	mutate(nclust = nclust / max(nclust)) %>%
-  	# filter(nclust < 100) %>%
-  	ggplot() +
-  	aes(x = nclust, y = I_XY, color = J_XY, group = city) +
-  	geom_path() +
-  	scale_x_continuous(trans = 'log10') +
-  	scale_y_continuous(trans = 'log10') +
-  	theme_minimal() +
-  	scale_color_continuous(low = 'white', high = 'firebrick',limits = c(0,2)) +
-  	annotation_logticks(size = .1, sides = 'b') + 
-  	ggtitle('Normalized loss curves for spatially-constrained information-theoretic clustering')
-  }
-ggsave('figs/normed_loss_curves.pdf', width = 10, height = 6)
-```
-
-## Evaluating loss curves
-
 ### AUC illustration
 
 ```{r}
 
 
-binary_loss_curves <- read_csv('throughput/loss_curves.csv') %>%
+binary_loss_curves <- read_csv('throughput/loss_curves_binary.csv') %>%
   group_by(city) %>% 
 	arrange(desc(I_XY)) %>% 
 	mutate(I_XY = max(I_XY) - I_XY,
@@ -620,11 +469,53 @@ ggsave('figs/AUC_illustration.pdf', width = 10, height = 4)
 embed_fonts('figs/AUC_illustration.pdf', outfile = 'figs/AUC_illustration.pdf')
 ```
 
+```{r}
+
+adjust_thresh = 0.01
+highlights  <- c('Philadelphia', 'Atlanta', 'Detroit')
+curves <- binary_loss_curves %>% 
+  mutate(exclude = (nclust != 1) & (cummax(I_XY - lag(I_XY,default = 0)) < adjust_thresh) & (nclust < 10)) %>% 
+	filter(!exclude,
+	       max(I_XY > 0.0)) %>%
+	mutate(nclust = row_number())
+  
+highlighted <- curves %>% 
+  filter(city %in% highlights)
+
+background <-  curves %>% 
+  filter(!(city %in% highlighted))
+
+end_points <- highlighted %>%
+	group_by(city) %>%
+	filter(nclust == max(nclust),
+	       city %in% highlights)
+
+# grey background
+
+background %>% 
+  ggplot(aes(x = nclust, y = I_XY)) +
+  geom_path(aes(group = city), color = 'grey') + 
+  geom_path(aes(group = city, color = city), data = highlighted) +
+  geom_text_repel(aes(label = city, color = city), data = end_points) +
+  scale_x_continuous(trans = 'log10') +
+  scale_y_continuous(limits = c(0,.5)) + 
+  theme_light() +
+  scale_color_brewer(palette = 'Set1', name = NULL, guide = 'none') +
+  xlab('Number of clusters (n)') + 
+	ylab(expression(I(C[n],Y))) +
+  # geom_vline(xintercept=2, alpha = .2) + 
+  annotation_logticks(sides = 'b', size = .2) 
+  
+  ggsave('figs/binary_loss_curves.pdf', width = 7, height = 4)
+  embed_fonts("figs/binary_loss_curves.pdf", outfile="figs/binary_loss_curves.pdf")
+
+```
+
+
 
 ```{r}
 
 # dippy point that doesn't seem to be true here: if you don't have any excluded points on your curve, your AUC should be the same. 
-
 
 adjusted_summary <- compute_AUC(loss_curves, adjust_thresh = .005) %>%
 	select(city, adj_AUC = AUC)
@@ -704,6 +595,11 @@ ggsave('figs/info_performance_adjed.pdf', width = 10, height = 6)
 ### Basic linear regression 
 
 ```{r}
+summary <- compute_AUC(loss_curves, adjust_thresh = 0.005) 
+summary <- summary %>% left_join(cache, by = c('city' = 'city')) %>%
+	left_join(info_summary[,c('city', 'J_XY', 'I_XY')]) %>%
+	filter(I_XY > 0)
+
 summary %>% mutate(AUC = AUC / max(AUC),
 		   `I(X,Y)` = I_XY / max(I_XY),
 		   `J(X,Y)` = J_XY / max(J_XY),
@@ -719,19 +615,12 @@ summary %>% mutate(AUC = AUC / max(AUC),
 	write(file = 'figs/adjusted_regression.txt')
 ```
 
-```{r}
+# Core maps
 
-summary %>% mutate(AUC = adj_AUC / max(adj_AUC),
-		   `I(X,Y)` = I_XY / max(I_XY),
-		   `J(X,Y)` = J_XY / max(J_XY),
-		   `H(Y)` = H_Y / max(H_Y),
-		   density = density / max(density)) %>%
-	lm(`J(X,Y)` ~ log(density) + `I(X,Y)`, data = .) %>% 
-	summary()
-
-```
+In this code chunk, we construct maps of binary (black/nonblack) segregation in Atlanta and Philadelphia, and then demonstrate the grid-based approach to computing the local information $J(X,Y)$. 
 
 ```{r}
+
 cities <- c('Philadelphia', 'Atlanta')
 
 tab <- data.frame(city = character(), percent_black = numeric(), H_Y = numeric(), I_XY = numeric(), J_XY = numeric())
@@ -753,7 +642,7 @@ for(city in cities){
   if(city == 'Atlanta'){
     guide = 'none'
   }else{
-    guide = guide_colorbar(barwidth = 1, barheight = 4, label.theme = element_text(size = 7, angle = 0, family = 'Palatino'))
+    guide = guide_colorbar(barwidth = 1, barheight = 4, label.theme = element_text(size = 7, angle = 0))
   }
   
   this_city <- city
@@ -773,10 +662,10 @@ for(city in cities){
                                 option = 'magma', 
                                 limits = c(0,1),
                                 guide = guide) + 
-    ggtitle(paste0(city, ': J(X,Y) = ', J_XY)) + 
+    ggtitle(paste0(city)) + 
     ggthemes::theme_map() + 
     theme(legend.justification=c(0,0), legend.position=c(.65,0)) + 
-    theme(text=element_text(size=16, family="Palatino"),
+    theme(text=element_text(size=16),
           plot.title = element_text(size=10, 
                                   vjust=1),
           legend.title = element_text(size = 8))
@@ -795,13 +684,13 @@ for(city in cities){
     left_join(stuff$grid@data[,c('id', 'pop', 'info')], by = c('id' = 'id')) %>% 
     ggplot(aes(x = long, y = lat, fill =  info, group = group)) + 
     geom_polygon() + 
-    viridis::scale_fill_viridis(name = expression(J[Y](x)), 
+    viridis::scale_fill_viridis(name = expression(J[Y](B)), 
                                 limits = c(0, .5), 
                                 option = 'magma',
                                 guide = guide) + 
     ggthemes::theme_map() +
     ggtitle(city) + 
-    theme(text=element_text(size=16, family="Palatino"),
+    theme(text=element_text(size=16),
           legend.justification=c(0,0), legend.position=c(.65,0),
           legend.title = element_text(size = 8),
           plot.title = element_text(size=10, vjust=1)) 
@@ -824,11 +713,19 @@ tab %>%
 
 ```
 
+
+# Binary cluster maps
+
+In this code chunk we produce maps based on the clusterings we found for Philadelphia and Atlanta. 
+
 ```{r}
 
 
 cluster_map_percent_black <- function(tracts_name, city, nclusters = 10){
 	tracts <- readOGR(dsn = paste0('data/cities/',tracts_name), layer = 'geo', verbose = FALSE)
+	
+	
+	
 	tracts <- tracts[sum(tracts@data[,columns]) != 0,]
 	clusters <- readRDS(paste0('throughput/clusterings/', city))
 	
@@ -863,7 +760,7 @@ cluster_map_percent_black <- function(tracts_name, city, nclusters = 10){
   if(tracts_name == 'Atlanta'){
     guide = 'none'
   }else{
-    guide = guide_colorbar(barwidth = 1, barheight = 4, label.theme = element_text(size = 7, angle = 0, family = 'Palatino'))
+    guide = guide_colorbar(barwidth = 1, barheight = 4, label.theme = element_text(size = 7, angle = 0))
   }
 	
 	g <- to_plot %>% 
@@ -896,6 +793,11 @@ for(city in c('Philadelphia', 'Atlanta')){
   if(!file.exists(paste0('throughput/clusterings/', city, '_binary'))){
     print(city)
   	spdf <- readOGR(dsn = paste0('data/cities/', city), layer = 'geo',verbose = FALSE)
+#   if(city == 'Philadelphia'){
+#   	   exclude <- c('421010098023','421010098022', '421010098021', '421010098011',  '421010098012')
+#     spdf <- spdf[!(spdf@data$GEOID %in% exclude),]   
+# 
+# 	}
   	spdf <- spdf[sum(spdf@data[,columns]) != 0,]
   	df <- spdf@data[,columns]
   	df <- df %>% 
@@ -920,8 +822,6 @@ for(city in c('Philadelphia', 'Atlanta')){
 	}
 }
   
-
-
 tab %>% 
   write_csv('figs/clustering_summary.csv')
 
@@ -943,9 +843,138 @@ pop / sum(pop)
 
 ```
 
+# batch figs
+
+```{r}
+
+if(!dir.exists('figs/batch_figs')){
+  dir.create('figs/batch_figs')
+}
+
+guide = guide_colorbar(barwidth = 1, barheight = 4, label.theme = element_text(size = 7, angle = 0))
+cities <- cache$city
+
+tab <- data.frame(city = character(), percent_black = numeric(), H_Y = numeric(), I_XY = numeric(), J_XY = numeric())
+
+for(city in cities){
+  tracts <- readOGR(dsn = paste0('data/cities/',city), 
+  	                         layer = 'geo', 
+  	                         verbose = FALSE)
+  
+  grid_tract <- read_csv(file = paste0('throughput/grid_tracts/', city, '.csv'))
+  grid <- readOGR(dsn = paste0('throughput/grids/',city), 
+  	                         layer = 'grid', 
+  	                         verbose = FALSE)
+  
+  df <- tracts@data %>%
+    mutate(percent_black = Black / total) %>% 
+    tbl_df
+  
+  this_city <- city
+  J_XY <- summary %>% filter(city == this_city) %>% 
+    select(J_XY) %>% 
+    as.numeric() %>% 
+    round(2)
+  
+  tracts %>% 
+    fortify(region = 'GEOID') %>% 
+    tbl_df() %>% 
+    left_join(df, by = c('id' = 'GEOID')) %>% 
+    ggplot(aes(x = long, y = lat, fill = percent_black, group = group)) + 
+    geom_polygon() + 
+    viridis::scale_fill_viridis(name = 'Percent Black', 
+                                labels = scales::percent, 
+                                option = 'magma', 
+                                limits = c(0,1),
+                                guide = guide) + 
+    ggtitle(paste0(city)) + 
+    ggthemes::theme_map() + 
+    theme(legend.justification=c(0,0), legend.position=c(.65,0)) + 
+    theme(text=element_text(size=16),
+          plot.title = element_text(size=10, 
+                                  vjust=1),
+          legend.title = element_text(size = 8))
+  
+  ggsave(paste0('figs/batch_figs/', city, '_percent_black.pdf'), width = 7, height = 7, units = 'cm')
+  embed_fonts(paste0('figs/batch_figs/', city, '_percent_black.pdf'), outfile = paste0('figs/batch_figs/', city, '_percent_black.pdf'))
+  
+  tracts@data <- tracts@data %>% 
+    mutate(non_black = Hispanic + Other + White + Asian)
+  
+  columns = c('non_black', 'Black')
+  stuff <- compx::info_analysis(tracts, columns = columns, resolution = NULL, grid_tract = grid_tract, grid = grid)
+  
+  stuff$grid %>% 
+    fortify(region = 'id') %>% 
+    left_join(stuff$grid@data[,c('id', 'pop', 'info')], by = c('id' = 'id')) %>% 
+    ggplot(aes(x = long, y = lat, fill =  info, group = group)) + 
+    geom_polygon() + 
+    viridis::scale_fill_viridis(name = expression(J[Y](B)), 
+                                limits = c(0, .5), 
+                                option = 'magma',
+                                guide = guide) + 
+    ggthemes::theme_map() +
+    ggtitle(city) + 
+    theme(text=element_text(size=16),
+          legend.justification=c(0,0), legend.position=c(.65,0),
+          legend.title = element_text(size = 8),
+          plot.title = element_text(size=10, vjust=1)) 
+  
+  # paste0('figs/', city, '_grid.pdf')
+  ggsave(paste0('figs/batch_figs/', city, '_grid.pdf'), width = 7, height = 7, units = 'cm')
+  embed_fonts(paste0('figs/batch_figs/', city, '_grid.pdf'), outfile = paste0('figs/batch_figs/', city, '_grid.pdf'))
+  
+  percent_black = sum(tracts@data$Black) / sum(tracts@data$total)
+  
+  new_row <- data.frame(city = city, percent_black = percent_black, H_Y = stuff$H_Y, I_XY = stuff$I_XY, J_XY = stuff$J_XY)
+  tab <- rbind(tab, new_row)
+}
+
+tab[,-1] <- round(tab[,-1],2)
+
+tab %>% 
+  mutate(percent_black = percent_black * 100) %>%   
+  write_csv('figs/comparative_summary.csv')
+
+```
 
 
 
+```{r}
+
+tab <- data.frame(city = character(), total_info = numeric(), info_6 = numeric(), info_20 = numeric())
+for(city in cities){
+  if(!file.exists(paste0('throughput/clusterings/', city, '_binary'))){
+    print(city)
+  	spdf <- readOGR(dsn = paste0('data/cities/', city), layer = 'geo',verbose = FALSE)
+  	spdf <- spdf[sum(spdf@data[,columns]) != 0,]
+  	df <- spdf@data[,columns]
+  	df <- df %>% 
+  	  mutate(non_Black = Asian + Hispanic + White + Other) %>% 
+  	  select(Black, non_Black)
+  	row.names(df) <- 1:nrow(df)
+  	constraint <- gRelate(spdf, byid = TRUE, pattern = '****1****')
+  	a <- info_clust(df, constraint)
+  	saveRDS(a, file = paste0('throughput/clusterings/',city, '_binary'))
+  }
+	columns = c('Black', 'White', 'Asian', 'Hispanic', 'Other')
+  new_row <- data.frame(city = city, total_info = 0, info_6 = 0, info_20 = 0)
+	for(nclusters in c(6, 20)){
+  	c <- cluster_map_percent_black(city, paste0(city, '_binary'), nclusters = nclusters)
+  	new_row$total_info = c$total_info
+  	new_row[,paste0('info_', nclusters)] <- c$info
+  	c$g
+  	ggsave(paste0('figs/batch_figs/', city, '_clusters_binary_', nclusters, '.pdf'), width = 7, height = 7, units = 'cm')
+  	embed_fonts(paste0('figs/batch_figs/', city, '_clusters_binary_', nclusters, '.pdf'),
+  	            outfile = paste0('figs/batch_figs/', city, '_clusters_binary_', nclusters, '.pdf'))
+  tab <- rbind(tab, new_row)
+	}
+}
+  
+tab %>% 
+  write_csv('figs/batch_figs/clustering_summary.csv')
+
+```
 
 # Session info
 ```{r}
