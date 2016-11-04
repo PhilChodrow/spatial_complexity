@@ -418,7 +418,7 @@ summary <- summary %>% left_join(cache, by = c('city' = 'city')) %>%
 
 sub_summary <- summary %>% filter(city %in% cities)
 
-sub_curves <- loss_curves %>%
+sub_curves <- binary_loss_curves %>%
 	filter(city %in% cities) 
 
 end_points <- sub_curves %>%
@@ -443,7 +443,7 @@ sub_curves %>%
 	ggplot() +
 	geom_path(aes(x = nclust, y = I_XY, group = city, color = city)) +
 	scale_x_continuous(trans = 'log10', limit = c(1, NA), expand = c(0, 0)) +
-	scale_y_continuous(limit = c(0,max(sub_curves$I_XY + 0.05)), expand = c(0, 0)) +
+	scale_y_continuous(limit = c(0,max(sub_curves$I_XY + 0.02)), expand = c(0, 0)) +
 	theme_light() +
   theme(text=element_text(size=16),
         panel.margin = unit(2, "lines"),
@@ -462,7 +462,7 @@ sub_curves %>%
 			  size = 0.25) +
 	# geom_text(aes(x = nclust, y = I_XY, label = city, hjust = -.2), data = end_points) + 
 	geom_polygon(aes(nclust, I_XY, fill = city), data = filled, alpha = .2) + 
-	geom_text(aes(x = 50, y = .2, label = paste('AUC = ', round(AUC,2))), data = sub_summary, size = 6) + 
+	geom_text(aes(x = 50, y = .15, label = paste('AUC = ', round(AUC,2))), data = sub_summary, size = 6) + 
 	# geom_text(aes(x = 50, y = .1, label = paste('J(X,Y) = ', round(J_XY,2))), data = sub_summary) +
 	facet_wrap(~city) + 
   scale_fill_brewer(palette = 'Set1', name = NULL, guide = 'none') +
@@ -498,7 +498,7 @@ end_points <- highlighted %>%
 
 end_points <- data.frame(city = c('Atlanta', 'Philadelphia', 'Detroit'),
                          nclust = c(50, 7, 8),
-                         I_XY = c(.35, .18, .37))
+                         I_XY = c(.34, .18, .37))
 
 # grey background
 
