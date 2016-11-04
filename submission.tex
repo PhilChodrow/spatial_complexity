@@ -166,6 +166,7 @@
 			\end{tabular}
 
 			\caption{
+				\todo[inline=true]{comment in here that it is possible to walk a km in Atlanta and basically see no change, not so in Philly}
 				Spatial analysis of residential segregation in Atlanta and Philadelphia. 
 				(\emph{Top}): Percentage of black residents. 
 				(\emph{Middle}): Hexgrid of spatial resolution 1km imposed over each city. Within each hex $B$ we compute the local information local information $J_Y(B) = I(X,Y | X \in B)$. 
@@ -242,6 +243,8 @@
 	and combine $i^*$ and $j^*$ into a single new region. We repeat this procedure until only $N$ regions remain. The optimization over $i$ and $j$ ensures that the groupings so defined approximate maximum between-group information partitions, and the constraint that $i$ must neighbor $j$ ensures that the structure so determined is spatially contiguous. Equation \eqref{eq:cluster_opt} thus defines \emph{spatially constrained, information-maximizing agglomerative clustering}. Since the algorithm is greedy, it possesses no guarantees of optimality, but in practice its performance leads to intuitive, demographically-coherent regions. 
 	\todo[inline=true]{Should we state the algorithm in a figure?}
 	
+	\todo[inline=true]{Consider plotting the loss-curves in a readable way.}
+
 	\begin{figure}
 		\centering
 			% \begin{subfigure}[b]{0.45\linewidth}
