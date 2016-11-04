@@ -788,7 +788,7 @@ cluster_map_percent_black <- function(tracts_name, city, nclusters = 10){
 
 ```{r}
 
-tab <- data.frame(city = character(), total_info = numeric(), info_6 = numeric(), info_20 = numeric())
+tab <- data.frame(city = character(), total_info = numeric(), info_4 = numeric(), info_20 = numeric())
 for(city in c('Philadelphia', 'Atlanta')){
   if(!file.exists(paste0('throughput/clusterings/', city, '_binary'))){
     print(city)
@@ -809,8 +809,8 @@ for(city in c('Philadelphia', 'Atlanta')){
   	saveRDS(a, file = paste0('throughput/clusterings/',city, '_binary'))
   }
 	columns = c('Black', 'White', 'Asian', 'Hispanic', 'Other')
-  new_row <- data.frame(city = city, total_info = 0, info_6 = 0, info_20 = 0)
-	for(nclusters in c(6, 20)){
+  new_row <- data.frame(city = city, total_info = 0, info_4 = 0, info_20 = 0)
+	for(nclusters in c(4, 20)){
   	c <- cluster_map_percent_black(city, paste0(city, '_binary'), nclusters = nclusters)
   	new_row$total_info = c$total_info
   	new_row[,paste0('info_', nclusters)] <- c$info
