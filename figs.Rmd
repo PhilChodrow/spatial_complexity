@@ -442,10 +442,14 @@ filled <- rbind(corner, filled) %>%  # problem is right here, the columns don't 
 sub_curves %>% 
 	ggplot() +
 	geom_path(aes(x = nclust, y = I_XY, group = city, color = city)) +
-	scale_x_continuous(trans = 'log10', limit = c(1, NA)) +
-	scale_y_continuous(limit = c(0,max(sub_curves$I_XY))) +
-	theme_minimal() +
-  theme(text=element_text(size=16)) + 
+	scale_x_continuous(trans = 'log10', limit = c(1, NA), expand = c(0, 0)) +
+	scale_y_continuous(limit = c(0,max(sub_curves$I_XY)), expand = c(0, 0)) +
+	theme_light() +
+  theme(text=element_text(size=16),
+        panel.margin = unit(2, "lines"),
+        panel.border = element_blank(),
+        strip.background = element_rect(fill = "white", color = "white", size = 2),
+        strip.text.x = element_text(size = 16, color = 'black')) + 
 	annotation_logticks(size = .1, sides = 'b', scaled = T) + 
 	geom_rect(data = rects, aes(xmin = xmin,
 								ymin = ymin,
@@ -462,9 +466,8 @@ sub_curves %>%
   scale_fill_brewer(palette = 'Set1', name = NULL, guide = 'none') +
   scale_color_brewer(palette = 'Set1', name = NULL, guide = 'none') + 
 	# scale_color_discrete(guide = F) + 
-	xlab('Number of clusters') + 
-	ylab('I(C,Y)') + 
-	ggtitle('AUC as Clustering Evaluation')
+	xlab('Number of clusters (n)') + 
+	ylab(expression(I(C[n],Y))) 
 
 ggsave('figs/AUC_illustration.pdf', width = 10, height = 4)
 embed_fonts('figs/AUC_illustration.pdf', outfile = 'figs/AUC_illustration.pdf')
@@ -499,8 +502,8 @@ background %>%
   geom_path(aes(group = city, color = city), data = highlighted) +
   geom_text_repel(aes(label = city, color = city), data = end_points) +
   theme_light() +
-  scale_x_continuous(trans = 'log10', limits = c(1,NA)) +
-  scale_y_continuous(limits = c(0,.5)) + 
+  scale_x_continuous(trans = 'log10', limits = c(1,NA), expand = c(0, 0)) +
+  scale_y_continuous(limits = c(0,.5), expand = c(0, 0)) + 
   scale_color_brewer(palette = 'Set1', name = NULL, guide = 'none') +
   xlab('Number of clusters (n)') + 
 	ylab(expression(I(C[n],Y))) +
@@ -511,7 +514,6 @@ background %>%
   embed_fonts("figs/binary_loss_curves.pdf", outfile="figs/binary_loss_curves.pdf")
 
 ```
-
 
 
 ```{r}
