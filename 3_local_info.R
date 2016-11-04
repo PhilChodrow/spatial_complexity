@@ -58,39 +58,39 @@ if(file.exists('throughput/info_cache.csv')){
 		I_XY = numeric(),
 		J_XY = numeric())
 }
-
+city = 'Boston'
 for(city in cities){
-	tracts <- readOGR(dsn = paste0('data/cities/',city), 
-	                  layer = 'geo', 
+	tracts <- readOGR(dsn = paste0('data/cities/',city),
+	                  layer = 'geo',
 	                  verbose = FALSE)
-	grid_dir        <- paste0('throughput/grids/',city)	
+	grid_dir        <- paste0('throughput/grids/',city)
 	grid_tract_path <- paste0('throughput/grid_tracts/', city, '.csv')
-  
+
 	if(file.exists(grid_tract_path) & dir.exists(grid_dir)){
 	  grid_tract <- read_csv(grid_tract_path)
-	  grid <- readOGR(dsn = paste0('throughput/grids/',city), 
-	                  layer = 'grid', 
+	  grid <- readOGR(dsn = paste0('throughput/grids/',city),
+	                  layer = 'geo',
 	                  verbose = FALSE)
-	  analysis <- info_analysis(tracts, 
-	                            columns = races, 
+	  analysis <- info_analysis(tracts,
+	                            columns = races,
 	                            resolution = resolution,
-	                            grid_polys = grid, 
+	                            grid_polys = grid,
 	                            grid_tract = grid_tract)
 	}else{
-	  analysis <- info_analysis(tracts, 
-	                            columns = races, 
+	  analysis <- info_analysis(tracts,
+	                            columns = races,
 	                            resolution = resolution)
 	  write_csv(analysis$grid_tract, paste0('throughput/grid_tracts/',city, '.csv'))
 	  tryCatch({writeOGR(analysis$grid, paste0("throughput/grids/", city),
-	                     'grid', 
-	                     driver = 'ESRI Shapefile', 
+	                     'grid',
+	                     driver = 'ESRI Shapefile',
 	                     morphToESRI = TRUE)},
 	           error = function(e) e)
 	}
-	
+
 	# summarized output
 	out <- data.frame(
-	  city       = city, 
+	  city       = city,
 	  area       = sum(tracts@data$area),
 	  population = sum(tracts@data$total),
 	  density    = sum(tracts@data$total) / sum(tracts@data$area),
@@ -98,7 +98,7 @@ for(city in cities){
 	  I_XY       = analysis$I_XY,
 	  J_XY       = analysis$J_XY
 	)
-	
+
 	cache <- rbind(cache, out)
 	write.csv(cache, 'throughput/info_cache.csv', row.names = FALSE)
 }
