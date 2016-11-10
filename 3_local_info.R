@@ -13,20 +13,6 @@ library(rgdal, quietly = TRUE)
 library(data.table)
 
 races <- c('Black', 'Hispanic', 'Asian', 'White', 'Other')
-resolution <- 1/2
-
-
-# Toy cities ----------
-
-# checkerboard_illustration()
-# ggsave('report/figs/toy.png', width = 5, height = 1.9)
-
-# Methodological Illustration ----------------
-
-# method_illustration()
-# ggsave('report/figs/method.png', width = 3, height = 3)
-
-
 
 cities <- list.files('data/cities')
 resolution <- 1
@@ -41,6 +27,7 @@ if(!dir.exists('throughput/grids')){
 if(!dir.exists('throughput/grid_tracts')){
 	dir.create('throughput/grid_tracts')
 }
+
 
 # MAIN COMPUTATION ---------------
 
@@ -71,17 +58,21 @@ for(city in cities){
 	  grid <- readOGR(dsn = paste0('throughput/grids/',city), 
 	                  layer = 'grid', 
 	                  verbose = FALSE)
+	  print(city)
 	  analysis <- info_analysis(tracts, 
 	                            columns = races, 
 	                            resolution = resolution,
 	                            grid_polys = grid, 
 	                            grid_tract = grid_tract)
 	}else{
-	  analysis <- info_analysis(tracts, 
-	                            columns = races, 
-	                            resolution = resolution)
-	  write_csv(analysis$grid_tract, paste0('throughput/grid_tracts/',city, '.csv'))
-	  tryCatch({writeOGR(analysis$grid, paste0("throughput/grids/", city),
+	  
+	  tryCatch(
+	    {print(city)
+	    analysis <- info_analysis(tracts, 
+	                              columns = races, 
+	                              resolution = resolution)
+	    write_csv(analysis$grid_tract, paste0('throughput/grid_tracts/',city, '.csv'))
+	    writeOGR(analysis$grid, paste0("throughput/grids/", city),
 	                     'grid', 
 	                     driver = 'ESRI Shapefile', 
 	                     morphToESRI = TRUE)},
