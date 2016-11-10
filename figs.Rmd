@@ -527,6 +527,56 @@ background %>%
 
 ```{r}
 
+adjust_thresh = 0.01
+highlights  <- c('Philadelphia', 'Atlanta', 'Detroit')
+curves <- loss_curves %>% 
+  mutate(exclude = (nclust != 1) & (cummax(I_XY - lag(I_XY,default = 0)) < adjust_thresh) & (nclust < 10)) %>% 
+	filter(!exclude,
+	       max(I_XY > 0.0)) %>%
+	mutate(nclust = row_number())
+  
+highlighted <- curves %>% 
+  filter(city %in% highlights)
+
+background <-  curves %>% 
+  filter(!(city %in% highlighted))
+
+end_points <- highlighted %>%
+	group_by(city) %>%
+	filter(nclust == 10,
+	       city %in% highlights)
+
+end_points <- data.frame(city = c('Atlanta', 'Philadelphia', 'Detroit'),
+                         nclust = c(50, 7, 8),
+                         I_XY = c(.34, .18, .37))
+
+# grey background
+
+background %>% 
+  ggplot(aes(x = nclust, y = I_XY)) +
+  geom_path(aes(group = city), color = 'grey', alpha = 0.6) + 
+  geom_path(aes(group = city, color = city), data = highlighted) +
+  geom_text(aes(label = city), data = end_points) +
+  theme_light() +
+  scale_x_continuous(trans = 'log10', limits = c(1,NA), expand = c(0, 0)) +
+  scale_y_continuous(limits = c(0,.5), expand = c(0, 0)) + 
+  scale_color_brewer(palette = 'Set1', name = NULL, guide = 'none') +
+  xlab('Number of clusters (n)') + 
+	ylab(expression(I(C[n],Y))) +
+  # geom_vline(xintercept=2, alpha = .2) + 
+  annotation_logticks(sides = 'b', size = .2) 
+  
+  ggsave('figs/loss_curves.pdf', width = 7, height = 4)
+  embed_fonts("figs/loss_curves.pdf", outfile="figs/loss_curves.pdf")
+
+```
+
+
+
+
+
+```{r}
+
 # dippy point that doesn't seem to be true here: if you don't have any excluded points on your curve, your AUC should be the same. 
 
 adjusted_summary <- compute_AUC(loss_curves, adjust_thresh = .005) %>%
