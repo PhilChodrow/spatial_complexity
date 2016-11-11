@@ -762,9 +762,9 @@ In this code chunk, we construct maps of binary (black/nonblack) segregation in 
 
 ```{r}
 
-cities <- c('Philadelphia', 'Atlanta')
+cities <- c('Philadelphia', 'Atlanta', 'Chicago', 'Detroit')
 
-tab <- data.frame(city = character(), percent_black = numeric(), H_Y = numeric(), I_XY = numeric(), J_XY = numeric())
+tab <- data.frame(city = character(), H_Y = numeric(), I_XY = numeric(), J_XY = numeric())
 
 for(city in cities){
   tracts <- readOGR(dsn = paste0('data/cities/',city), 
@@ -842,7 +842,7 @@ for(city in cities){
   
   percent_black = sum(tracts@data$Black) / sum(tracts@data$total)
   
-  new_row <- data.frame(city = city, percent_black = percent_black, H_Y = stuff$H_Y, I_XY = stuff$I_XY, J_XY = stuff$J_XY)
+  new_row <- data.frame(city = city, H_Y = stuff$H_Y, I_XY = stuff$I_XY, J_XY = stuff$J_XY)
   tab <- rbind(tab, new_row)
 }
 
