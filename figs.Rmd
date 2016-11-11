@@ -54,7 +54,6 @@ The checkerboard problem is a foundational issue in the spatial analysis of dive
 
 overlay <- data.frame(x = 6.5, y = 4.5)
 
-
 expand.grid(x = 1:8, y = 1:8) %>%
 	mutate(`(a)` = 1,
 		   `(b)` = .5,
@@ -81,13 +80,50 @@ expand.grid(x = 1:8, y = 1:8) %>%
 		  strip.text=element_text(vjust=-100)) + 
   geom_tile(aes(x = x, y = y), color = 'red', alpha = 0, size = 0.5, data = overlay)
 
-
 # g <- checkerboard_illustration() 
 # g
 # g + theme(text=element_text(size=10, family="Palatino"))
 ggsave('figs/checkerboard.pdf', width = 4, height = 1.3)
 embed_fonts("figs/checkerboard.pdf", outfile="figs/checkerboard.pdf")
 ```
+
+```{r, fig.height=3}
+
+expand.grid(x = 1:8, y = 1:8) %>%
+	mutate(`(a)` = .5,
+		     `(b)` = (x > 4)*1,
+		     `(c)` = ifelse(x == 7 & y %in% c(4,5), 0, `(b)`),
+		     `(c)` = ifelse(x == 2 & y %in% c(4,5), 1, `(c)`),
+		     `(d)` = (x + y) %% 2) %>%
+	gather(key = model, value = p, -x, -y) %>%
+	ggplot(aes(x = x, y = y)) +
+	ggthemes::theme_map() +
+  geom_tile(aes(fill = p)) +
+	scale_fill_continuous(low = 'white', high = 'black ', limits=c(0,1)) +
+	facet_grid(~model, switch = 'x') +
+	xlab('') +
+	ylab('') +
+	guides(fill=FALSE) + 
+	theme(axis.ticks = element_blank(),
+		  axis.text.x = element_blank(),
+		  axis.text.y = element_blank(),
+		  panel.margin = unit(1, "mm"),
+		  panel.background = element_rect(),
+		  panel.grid.major = element_line(size = 0),
+		  panel.grid.minor = element_line(size = 0),
+		  strip.background = element_rect(fill = "white", color = "white", size = 2),
+		  plot.margin=unit(c(1,1,0,0),"mm"),
+		  strip.text=element_text(vjust=-100)) 
+
+# g <- checkerboard_illustration() 
+# g
+# g + theme(text=element_text(size=10, family="Palatino"))
+out_dir = 'figs/checkerboard_b.pdf'
+ggsave(out_dir, width = 4, height = 1.3)
+embed_fonts(out_dir, outfile=out_dir)
+```
+
+
 
 #  Mean Local Information
 
@@ -414,7 +450,7 @@ compute_AUC <- function(loss_curves, adjust_thresh = 0){
 		dplyr::arrange(desc(AUC)) 
 }
 
-summary <- compute_AUC(binary_loss_curves, adjust_thresh = 0.005) 
+summary <- compute_AUC(loss_curves, adjust_thresh = 0.005) 
 summary <- summary %>% left_join(cache, by = c('city' = 'city')) %>%
 	left_join(info_summary[,c('city', 'J_XY', 'I_XY')]) %>%
 	filter(I_XY > 0)
@@ -548,7 +584,7 @@ end_points <- highlighted %>%
 
 end_points <- data.frame(city = c('Atlanta', 'Philadelphia', 'Detroit'),
                          nclust = c(50, 7, 8),
-                         I_XY = c(.34, .18, .37))
+                         I_XY = c(.36, .19, .44))
 
 # grey background
 
@@ -559,7 +595,7 @@ background %>%
   geom_text(aes(label = city), data = end_points) +
   theme_light() +
   scale_x_continuous(trans = 'log10', limits = c(1,NA), expand = c(0, 0)) +
-  scale_y_continuous(limits = c(0,.5), expand = c(0, 0)) + 
+  scale_y_continuous(limits = c(0,.7), expand = c(0, 0)) + 
   scale_color_brewer(palette = 'Set1', name = NULL, guide = 'none') +
   xlab('Number of clusters (n)') + 
 	ylab(expression(I(C[n],Y))) +
@@ -1037,6 +1073,193 @@ tab %>%
   write_csv('figs/batch_figs/clustering_summary.csv')
 
 ```
+
+```{r}
+
+races <- c('Asian', 'Black', 'Hispanic', 'Other', 'White')
+city <- 'Atlanta'
+
+prominence_map <- function(city, races){
+  tracts <- readOGR(dsn = paste0('data/cities/',city), layer = 'geo', verbose = FALSE)
+  
+  overall_dist <- tracts@data %>% 
+  	select_(.dots = races) %>% 
+  	colSums() %>% 
+  	simplex_normalize()	
+  
+  f <- function(row){
+  here <- tracts@data[row,races] %>% 
+  	simplex_normalize
+  index <- which.max(here * log(here / overall_dist))
+  return(races[index])
+  }
+  
+  g <- function(row){
+  	here <- tracts@data[row,races] %>% 
+  		simplex_normalize
+  	return(max(here * log(here / overall_dist), na.rm = T))
+  }
+  
+  tracts@data$prominent_race <- 1:nrow(tracts@data) %>% 
+  as.matrix() %>% 
+  apply(FUN = f, MARGIN = 1)
+  
+  tracts@data$prominence <- 1:nrow(tracts@data) %>% 
+  	as.matrix() %>% 
+  	apply(FUN = g, MARGIN = 1)
+  
+  df <- tracts@data
+  
+  g <- tracts %>% fortify(region = 'GEOID') %>% 
+      tbl_df() %>% 
+      left_join(df, by = c('id' = 'GEOID')) %>% 
+      ggplot() + 
+      geom_polygon(aes(x = long, y = lat, fill = prominent_race, group = group, alpha = prominence))  +
+      ggthemes::theme_map() + 
+      scale_fill_brewer(palette = 'Set1') + 
+      scale_alpha_continuous(guide = 'none', limits = c(0,1)) + 
+      ggtitle(city) + 
+      theme(text=element_text(size=16),
+            plot.title = element_text(size=20, vjust = -5),
+            legend.title = element_blank(),
+            legend.position="bottom")
+  g
+}
+
+cluster_map <- function(map, city_name, races, nclusters){
+
+  tracts <- readOGR(dsn = paste0('data/cities/',city_name), layer = 'geo', verbose = FALSE)
+  tracts <- tracts[sum(tracts@data[,races]) != 0,]
+  clusters <- readRDS(paste0('throughput/clusterings/', city_name))
+  loss_curves <- readr::read_csv('throughput/loss_curves.csv') %>%
+  	group_by_('city') %>% 
+  	arrange(desc(I_XY)) %>% 
+  	mutate(I_XY = max(I_XY) - I_XY,
+  		   nclust = row_number(),
+  		   I_diff = I_XY - lag(I_XY))
+    for(ncluster in nclusters){
+  		
+  		weight <- loss_curves %>% filter(city == city_name, 
+  					   nclust == ncluster) %>% 
+  		ungroup() %>% 
+  		select(I_diff) %>% 
+  		as.numeric()
+  		
+  		tracts@data$cluster <- cutree(clusters,ncluster)
+  		overlay <- unionSpatialPolygons(tracts, IDs = tracts@data$cluster) %>% fortify()
+  		
+  		g <- g + geom_polygon(aes(x = long, y = lat, group = group),data = overlay,
+  		                      alpha = 0, fill = NA, size = 5*weight, color = 'black') 
+    }
+  
+  max_weight <- loss_curves %>% filter(city == city_name) %>% 
+  		ungroup() %>% 
+  		summarise(max_diff = max(I_diff, na.rm = T)) %>% 
+  		as.numeric()
+  
+  tracts@data$cluster <- 1
+  overlay <- unionSpatialPolygons(tracts, IDs = tracts@data$cluster) %>% fortify()
+  g <- g + geom_polygon(aes(x = long, y = lat, group = group),data = overlay,
+  		                      alpha = 0, fill = NA, size = 5*max_weight, color = 'white')
+  
+  
+  g
+}
+
+
+```
+
+```{r}
+
+for(city in info_summary$city){
+  print(city)
+  
+  
+  g <- prominence_map(city, races)
+  
+  out_dir <- paste0('figs/batch_figs/prominence_map_', city, '.pdf')
+  
+  ggsave(out_dir, width = 14, height = 14, units = 'cm')
+  embed_fonts(out_dir, outfile=out_dir)
+  
+  nclusters <- 1:6
+  g <- g %>% cluster_map(city, races, nclusters)  
+  
+  out_dir <- paste0('figs/batch_figs/cluster_map_', city, '.pdf')
+  ggsave(out_dir, width = 14, height = 14, units = 'cm')
+  embed_fonts(out_dir, outfile=out_dir)
+}
+
+```
+
+
+```{r}
+
+
+
+city <- 'Detroit'
+print(city)
+nclusters <- 1:6
+g <- prominence_map(city, races)
+g <- g %>% cluster_map(city, races, nclusters)  
+
+out_dir <- paste0('figs/prominence_map_Detroit.pdf')
+ggsave(out_dir, width = 14, height = 14, units = 'cm')
+embed_fonts(out_dir, outfile=out_dir)
+
+labels <- data_frame(label = c('A', 'B', 'C', 'D', 'E', 'F'),
+                     long   = c(-83.35, -83.1558, -83.164, -82.905, -83.055, -83.1258),
+                     lat  = c(42.37, 42.39, 42.28, 42.4, 42.4, 42.3214)) 
+
+g +
+  geom_point(aes(x = long, y = lat), data = labels, size = 6, pch=21, color = 'black', fill = 'white', alpha = .6) + 
+  geom_text(aes(x = long, y = lat, label = label), 
+                  data = labels, 
+                  size = 4, fontface = 'bold')
+
+out_dir <- paste0('figs/cluster_map_Detroit.pdf')
+
+ggsave(out_dir, width = 14, height = 14, units = 'cm')
+embed_fonts(out_dir, outfile=out_dir)
+
+
+
+```
+
+```{r}
+
+
+```
+
+```{r}
+pal <- RColorBrewer::brewer.pal(name = 'Set1', 5)
+
+make_cluster_groups('Detroit', 6) %>% 
+	mutate(race = factor(race, levels = c('Asian', 'Other', 'Hispanic', 'Black', 'White'))) %>% 
+  group_by(cluster) %>% 
+  mutate(alpha = p / sum(p),
+         total = sum(p)) %>% 
+	ggplot(aes(y = race, x = cluster, fill = race)) + 
+  scale_fill_manual(values = c(pal[1], pal[4], pal[3], pal[2], pal[5]), name = NULL, guide = 'none', labels = LETTERS[1:nclusters]) + 
+	geom_tile(color = 'black',  aes(alpha = alpha), size = 1) + 
+	geom_text(aes(
+		label = ifelse(p < 0.005, "", 100 * round(p,2))), size = 8) + 
+  scale_alpha_continuous(guide = 'none', limits = c(0, 1)) + 
+	theme_minimal() + 
+	theme(
+	  text=element_text(size=25),
+		  axis.ticks.x = element_blank(),
+		  axis.title = element_blank(),
+		  legend.position="bottom",
+		  legend.title = element_blank(),
+		  line = element_blank()) 
+
+ggsave('figs/example_clusters_detailed.pdf', width = 8, height = 6)
+embed_fonts("figs/example_clusters_detailed.pdf", outfile="figs/example_clusters_detailed.pdf")
+
+
+```
+
 
 # Session info
 ```{r}
