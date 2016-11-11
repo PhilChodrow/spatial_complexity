@@ -539,13 +539,17 @@ end_points <- data.frame(city = c('Atlanta', 'Philadelphia', 'Detroit', 'Chicago
                          nclust = c(50, 7, 8, 1000),
                          I_XY = c(.35, .175, .38, .42))
 
+rects <- highlighted %>% group_by(city) %>% 
+	summarise(xmin = 1, ymin = 0, xmax = max(nclust), ymax = max(I_XY))
+
+
 # grey background
 
 background %>% 
-  ggplot(aes(x = nclust, y = I_XY)) +
-  geom_path(aes(group = city), color = 'grey', alpha = 0.6) + 
-  geom_path(aes(group = city, color = city), data = highlighted) +
-  geom_label(aes(label = city, fill = city), data = end_points) +
+  ggplot() +
+  geom_path(aes(group = city, x = nclust, y = I_XY), color = 'grey', alpha = 0.6) + 
+  geom_path(aes(group = city, color = city, x = nclust, y = I_XY), data = highlighted) +
+  geom_label(aes(x = nclust, y = I_XY, label = city, fill = city), data = end_points) +
   theme_light() +
   scale_x_continuous(trans = 'log10', limits = c(1,NA), expand = c(0, 0)) +
   scale_y_continuous(limits = c(0,.5), expand = c(0, 0)) + 
@@ -554,7 +558,16 @@ background %>%
   xlab('Number of clusters (n)') + 
 	ylab(expression(I(C[n],Y))) +
   # geom_vline(xintercept=2, alpha = .2) + 
-  annotation_logticks(sides = 'b', size = .2) 
+  annotation_logticks(sides = 'b', size = .2) +
+  geom_rect(data = rects, aes(xmin = xmin,
+								ymin = ymin,
+								xmax = xmax,
+								ymax = ymax,
+								group = city,
+								color = city),
+			  # color = 'grey',
+			  alpha = 0,
+			  size = 0.25)
   
   ggsave('figs/binary_loss_curves.pdf', width = 7, height = 4)
   embed_fonts("figs/binary_loss_curves.pdf", outfile="figs/binary_loss_curves.pdf")
@@ -587,13 +600,29 @@ end_points <- data.frame(city = c('Atlanta', 'Philadelphia', 'Detroit', 'Chicago
                          nclust = c(50, 7, 8, 1000),
                          I_XY = c(.36, .19, .46, 0.66))
 
+rects <- highlighted %>% group_by(city) %>% 
+	summarise(xmin = 1, ymin = 0, xmax = max(nclust), ymax = max(I_XY))
+
 # grey background
 
+filled <- highlighted[,c('nclust','I_XY', 'city')] %>% 
+  select(city, I_XY, nclust) %>% 
+  ungroup()
+
+corner <- filled %>% group_by(city) %>%
+	summarise(I_XY = 0,
+	          nclust = max(nclust)) 
+
+filled <- rbind(corner, filled) %>%  # problem is right here, the columns don't add up
+	dplyr::arrange(city, nclust, desc(I_XY))
+
+
+
+
 background %>% 
-  ggplot(aes(x = nclust, y = I_XY)) +
-  geom_path(aes(group = city), color = 'grey', alpha = 0.6) + 
-  geom_path(aes(group = city, color = city), data = highlighted) +
-  geom_label(aes(label = city, fill = city), data = end_points) +
+  ggplot() +
+  geom_path(aes(group = city, x = nclust, y = I_XY), color = 'grey', alpha = 0.6) + 
+  geom_path(aes(group = city, color = city, x = nclust, y = I_XY), data = highlighted, size = 1) +
   theme_light() +
   scale_x_continuous(trans = 'log10', limits = c(1,NA), expand = c(0, 0)) +
   scale_y_continuous(limits = c(0,.7), expand = c(0, 0)) + 
@@ -602,7 +631,19 @@ background %>%
   xlab('Number of clusters (n)') + 
 	ylab(expression(I(C[n],Y))) +
   # geom_vline(xintercept=2, alpha = .2) + 
-  annotation_logticks(sides = 'b', size = .2) 
+  annotation_logticks(sides = 'b', size = .2) +
+  # geom_polygon(aes(nclust, I_XY, fill = city, group = city), data = filled, alpha = .15) + 
+  geom_rect(data = rects, aes(xmin = xmin,
+								ymin = ymin,
+								xmax = xmax,
+								ymax = ymax,
+								group = city,
+								color = city),
+			  # color = 'grey',
+			  alpha = 0,
+			  size = 0.3) + 
+  geom_label(aes(x = nclust, y = I_XY, label = city, fill = city), data = end_points) 
+
   
   ggsave('figs/loss_curves.pdf', width = 7, height = 4)
   embed_fonts("figs/loss_curves.pdf", outfile="figs/loss_curves.pdf")
