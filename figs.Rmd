@@ -817,7 +817,7 @@ for(city in cities){
   tracts@data <- tracts@data %>% 
     mutate(non_black = Hispanic + Other + White + Asian)
   
-  columns = c('non_black', 'Black')
+  columns = races
   stuff <- compx::info_analysis(tracts, columns = columns, resolution = NULL, grid_tract = grid_tract, grid = grid)
   
   stuff$grid %>% 
