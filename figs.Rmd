@@ -1252,12 +1252,12 @@ labels <- data_frame(label = c('A', 'B', 'C', 'D', 'E', 'F'),
                      lat  = c(42.37, 42.39, 42.28, 42.4, 42.4, 42.3214)) 
 
 g +
-  geom_point(aes(x = long, y = lat), data = labels, size = 6, pch=21, color = 'black', fill = 'white', alpha = .6) + 
+  geom_point(aes(x = long, y = lat), data = labels, size = 9, pch=21, color = 'black', fill = 'white', alpha = .6) + 
   geom_text(aes(x = long, y = lat, label = label), 
                   data = labels, 
-                  size = 4, fontface = 'bold')
+                  size = 7, fontface = 'bold')
 
-out_dir <- paste0('figs/cluster_map_Detroit.pdf')
+out_dir <- paste0('figs/cluster_map_Detroit_labeled.pdf')
 
 ggsave(out_dir, width = 14, height = 14, units = 'cm')
 embed_fonts(out_dir, outfile=out_dir)
