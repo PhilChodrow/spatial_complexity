@@ -432,7 +432,7 @@ binary_loss_curves <- read_csv('throughput/loss_curves_binary.csv') %>%
 	mutate(I_XY = max(I_XY) - I_XY,
 		   nclust = row_number())
 
-cities <- c('Atlanta','Philadelphia', 'Detroit')
+cities <- c('Atlanta','Philadelphia', 'Detroit', 'Chicago')
 
 compute_AUC <- function(loss_curves, adjust_thresh = 0){
 	loss_curves %>% 
@@ -503,21 +503,21 @@ sub_curves %>%
 	geom_polygon(aes(nclust, I_XY, fill = city), data = filled, alpha = .2) + 
 	geom_text(aes(x = 50, y = .15, label = paste('AUC = ', round(AUC,2))), data = sub_summary, size = 6) + 
 	# geom_text(aes(x = 50, y = .1, label = paste('J(X,Y) = ', round(J_XY,2))), data = sub_summary) +
-	facet_wrap(~city) + 
+	facet_wrap(~city, ncol = 2) + 
   scale_fill_brewer(palette = 'Set1', name = NULL, guide = 'none') +
   scale_color_brewer(palette = 'Set1', name = NULL, guide = 'none') + 
 	# scale_color_discrete(guide = F) + 
 	xlab('Number of clusters (n)') + 
 	ylab(expression(I(C[n],Y))) 
 
-ggsave('figs/AUC_illustration.pdf', width = 10, height = 4)
+ggsave('figs/AUC_illustration.pdf', width = 7, height = 5.5)
 embed_fonts('figs/AUC_illustration.pdf', outfile = 'figs/AUC_illustration.pdf')
 ```
 
 ```{r}
 
 adjust_thresh = 0.01
-highlights  <- c('Philadelphia', 'Atlanta', 'Detroit')
+highlights  <- c('Philadelphia', 'Atlanta', 'Detroit', 'Chicago')
 curves <- binary_loss_curves %>% 
   mutate(exclude = (nclust != 1) & (cummax(I_XY - lag(I_XY,default = 0)) < adjust_thresh) & (nclust < 10)) %>% 
 	filter(!exclude,
@@ -535,9 +535,9 @@ end_points <- highlighted %>%
 	filter(nclust == 10,
 	       city %in% highlights)
 
-end_points <- data.frame(city = c('Atlanta', 'Philadelphia', 'Detroit'),
-                         nclust = c(50, 7, 8),
-                         I_XY = c(.34, .18, .37))
+end_points <- data.frame(city = c('Atlanta', 'Philadelphia', 'Detroit', 'Chicago'),
+                         nclust = c(50, 7, 8, 1000),
+                         I_XY = c(.35, .175, .38, .42))
 
 # grey background
 
@@ -545,11 +545,12 @@ background %>%
   ggplot(aes(x = nclust, y = I_XY)) +
   geom_path(aes(group = city), color = 'grey', alpha = 0.6) + 
   geom_path(aes(group = city, color = city), data = highlighted) +
-  geom_text(aes(label = city), data = end_points) +
+  geom_label(aes(label = city, fill = city), data = end_points) +
   theme_light() +
   scale_x_continuous(trans = 'log10', limits = c(1,NA), expand = c(0, 0)) +
   scale_y_continuous(limits = c(0,.5), expand = c(0, 0)) + 
   scale_color_brewer(palette = 'Set1', name = NULL, guide = 'none') +
+  scale_fill_brewer(palette = 'Set1', name = NULL, guide = 'none') +
   xlab('Number of clusters (n)') + 
 	ylab(expression(I(C[n],Y))) +
   # geom_vline(xintercept=2, alpha = .2) + 
@@ -564,7 +565,7 @@ background %>%
 ```{r}
 
 adjust_thresh = 0.01
-highlights  <- c('Philadelphia', 'Atlanta', 'Detroit')
+highlights  <- c('Philadelphia', 'Atlanta', 'Detroit', 'Chicago')
 curves <- loss_curves %>% 
   mutate(exclude = (nclust != 1) & (cummax(I_XY - lag(I_XY,default = 0)) < adjust_thresh) & (nclust < 10)) %>% 
 	filter(!exclude,
@@ -582,9 +583,9 @@ end_points <- highlighted %>%
 	filter(nclust == 10,
 	       city %in% highlights)
 
-end_points <- data.frame(city = c('Atlanta', 'Philadelphia', 'Detroit'),
-                         nclust = c(50, 7, 8),
-                         I_XY = c(.36, .19, .44))
+end_points <- data.frame(city = c('Atlanta', 'Philadelphia', 'Detroit', 'Chicago'),
+                         nclust = c(50, 7, 8, 1000),
+                         I_XY = c(.36, .19, .46, 0.66))
 
 # grey background
 
@@ -592,11 +593,12 @@ background %>%
   ggplot(aes(x = nclust, y = I_XY)) +
   geom_path(aes(group = city), color = 'grey', alpha = 0.6) + 
   geom_path(aes(group = city, color = city), data = highlighted) +
-  geom_text(aes(label = city), data = end_points) +
+  geom_label(aes(label = city, fill = city), data = end_points) +
   theme_light() +
   scale_x_continuous(trans = 'log10', limits = c(1,NA), expand = c(0, 0)) +
   scale_y_continuous(limits = c(0,.7), expand = c(0, 0)) + 
   scale_color_brewer(palette = 'Set1', name = NULL, guide = 'none') +
+  scale_fill_brewer(palette = 'Set1', name = NULL, guide = 'none') +
   xlab('Number of clusters (n)') + 
 	ylab(expression(I(C[n],Y))) +
   # geom_vline(xintercept=2, alpha = .2) + 
@@ -1194,9 +1196,6 @@ for(city in info_summary$city){
 
 
 ```{r}
-
-
-
 city <- 'Detroit'
 print(city)
 nclusters <- 1:6
@@ -1222,14 +1221,29 @@ out_dir <- paste0('figs/cluster_map_Detroit.pdf')
 ggsave(out_dir, width = 14, height = 14, units = 'cm')
 embed_fonts(out_dir, outfile=out_dir)
 
-
-
 ```
 
 ```{r}
-
-
+for(city in c('Chicago', 'Atlanta', 'Detroit', 'Philadelphia')){
+  print(city)
+  
+  
+  g <- prominence_map(city, races)
+  
+  out_dir <- paste0('figs/prominence_map_', city, '.pdf')
+  
+  ggsave(out_dir, width = 14, height = 14, units = 'cm')
+  embed_fonts(out_dir, outfile=out_dir)
+  
+  nclusters <- 1:6
+  g <- g %>% cluster_map(city, races, nclusters)  
+  
+  out_dir <- paste0('figs/cluster_map_', city, '.pdf')
+  ggsave(out_dir, width = 14, height = 14, units = 'cm')
+  embed_fonts(out_dir, outfile=out_dir)
+}
 ```
+
 
 ```{r}
 pal <- RColorBrewer::brewer.pal(name = 'Set1', 5)
