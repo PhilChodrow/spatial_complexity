@@ -1120,7 +1120,6 @@ tab %>%
 ```{r}
 
 races <- c('Asian', 'Black', 'Hispanic', 'Other', 'White')
-city <- 'Atlanta'
 
 prominence_map <- function(city, races){
   tracts <- readOGR(dsn = paste0('data/cities/',city), layer = 'geo', verbose = FALSE)
@@ -1159,13 +1158,11 @@ prominence_map <- function(city, races){
       ggplot() + 
       geom_polygon(aes(x = long, y = lat, fill = prominent_race, group = group, alpha = prominence))  +
       ggthemes::theme_map() + 
-      scale_fill_brewer(palette = 'Set1') + 
       scale_alpha_continuous(guide = 'none', limits = c(0,1)) + 
       ggtitle(city) + 
-      theme(text=element_text(size=16),
-            plot.title = element_text(size=20, vjust = -5),
+      theme(plot.title = element_text(size=20, vjust = -5),
             legend.title = element_blank(),
-            legend.position="bottom")
+            legend.position = c(.7, .1))
   g
 }
 
@@ -1192,7 +1189,7 @@ cluster_map <- function(map, city_name, races, nclusters){
   		overlay <- unionSpatialPolygons(tracts, IDs = tracts@data$cluster) %>% fortify()
   		
   		g <- g + geom_polygon(aes(x = long, y = lat, group = group),data = overlay,
-  		                      alpha = 0, fill = NA, size = 5*weight, color = 'black') 
+  		                      alpha = 0, fill = NA, size = 8*weight, color = 'black') 
     }
   
   max_weight <- loss_curves %>% filter(city == city_name) %>% 
@@ -1200,10 +1197,11 @@ cluster_map <- function(map, city_name, races, nclusters){
   		summarise(max_diff = max(I_diff, na.rm = T)) %>% 
   		as.numeric()
   
+  
   tracts@data$cluster <- 1
   overlay <- unionSpatialPolygons(tracts, IDs = tracts@data$cluster) %>% fortify()
   g <- g + geom_polygon(aes(x = long, y = lat, group = group),data = overlay,
-  		                      alpha = 0, fill = NA, size = 5*max_weight, color = 'white')
+  		                      alpha = 0, fill = NA, size = 8*max_weight, color = 'white')
   
   
   g
@@ -1217,8 +1215,8 @@ cluster_map <- function(map, city_name, races, nclusters){
 for(city in info_summary$city){
   print(city)
   
-  
   g <- prominence_map(city, races)
+  g <- g + scale_fill_brewer(palette = 'Set1')
   
   out_dir <- paste0('figs/batch_figs/prominence_map_', city, '.pdf')
   
@@ -1241,6 +1239,11 @@ city <- 'Detroit'
 print(city)
 nclusters <- 1:6
 g <- prominence_map(city, races)
+
+guide <- guide_legend(label.theme = element_text(size = 14, angle = 0))
+
+g <- g + scale_fill_brewer(palette = 'Set1', guide = guide)
+
 g <- g %>% cluster_map(city, races, nclusters)  
 
 out_dir <- paste0('figs/prominence_map_Detroit.pdf')
@@ -1259,28 +1262,44 @@ g +
 
 out_dir <- paste0('figs/cluster_map_Detroit_labeled.pdf')
 
-ggsave(out_dir, width = 14, height = 14, units = 'cm')
+ggsave(out_dir, width = 14, height = 10, units = 'cm')
 embed_fonts(out_dir, outfile=out_dir)
 
 ```
+```{r}
+
+g <- g + scale_fill_brewer(palette = 'Set1', guide = guide)
+g + theme(legend.position = c(.8, .1))
+
+```
+
+
 
 ```{r}
 for(city in c('Chicago', 'Atlanta', 'Detroit', 'Philadelphia')){
   print(city)
   
-  
   g <- prominence_map(city, races)
+  
+  if(city %in% c('Detroit', 'Philadelphia')){
+    guide <- guide_legend(label.theme = element_text(size = 14, angle = 0))
+    
+  }else{
+    guide = FALSE
+  }
+  
+  g <- g + scale_fill_brewer(palette = 'Set1', guide = guide)
   
   out_dir <- paste0('figs/prominence_map_', city, '.pdf')
   
-  ggsave(out_dir, width = 14, height = 14, units = 'cm')
+  ggsave(out_dir, width = 14, height = 10, units = 'cm')
   embed_fonts(out_dir, outfile=out_dir)
   
   nclusters <- 1:6
   g <- g %>% cluster_map(city, races, nclusters)  
   
   out_dir <- paste0('figs/cluster_map_', city, '.pdf')
-  ggsave(out_dir, width = 14, height = 14, units = 'cm')
+  ggsave(out_dir, width = 14, height = 10, units = 'cm')
   embed_fonts(out_dir, outfile=out_dir)
 }
 ```
