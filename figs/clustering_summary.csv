@@ -1,3 +1,4 @@
-city,total_info,info_4,info_20
-Philadelphia,0.32,0.21,0.27
-Atlanta,0.34,0.27,0.31
+nclust,Atlanta,Philadelphia
+2,0.27,0.09
+5,0.32,0.3
+10,0.34,0.36

@@ -1,5 +1,3 @@
-city,H_Y,I_XY,J_XY,percent_black
-Philadelphia,1.31,0.56,0.14,38.6077431803155
-Atlanta,1.22,0.49,0.06,38.6077431803155
-Chicago,1.33,0.61,0.09,38.6077431803155
-Detroit,1.12,0.57,0.07,38.6077431803155
+city,H_Y,I_XY,J_XY
+Atlanta,1.22,0.49,0.06
+Philadelphia,1.31,0.56,0.14

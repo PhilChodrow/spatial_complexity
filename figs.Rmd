@@ -848,11 +848,19 @@ for(city in cities){
 
 tab[,-1] <- round(tab[,-1],2)
 
-tab %>% 
-  mutate(percent_black = percent_black * 100) %>%   
-  write_csv('figs/comparative_summary.csv')
-
+# tab %>% 
+#   mutate(percent_black = percent_black * 100) %>%   
+#   write_csv('figs/comparative_summary.csv')
 ```
+```{r}
+cache %>% filter(city %in% c('Philadelphia', 'Atlanta')) %>% 
+  select(city, H_Y, I_XY, J_XY) %>%
+  mutate_at(.cols = c('H_Y', 'I_XY','J_XY'), 
+            function(x) round(x, 2)) %>%
+  write_csv('figs/comparative_summary.csv')
+```
+
+
 
 
 # Binary cluster maps
@@ -860,8 +868,6 @@ tab %>%
 In this code chunk we produce maps based on the clusterings we found for Philadelphia and Atlanta. 
 
 ```{r}
-
-
 cluster_map_percent_black <- function(tracts_name, city, nclusters = 10){
 	tracts <- readOGR(dsn = paste0('data/cities/',tracts_name), layer = 'geo', verbose = FALSE)
 	
@@ -964,10 +970,31 @@ for(city in c('Philadelphia', 'Atlanta')){
 }
   
 tab %>% 
-  write_csv('figs/clustering_summary.csv')
+  write_csv('figs/clustering_summary.csv')s
+```
 
+```{r}
+loss_curves %>% 
+  group_by(city) %>% 
+  filter(city %in% c('Atlanta', 'Philadelphia'),
+         nclust %in% c(2, 5, 10)) %>% 
+  select(-I_diff) %>% 
+  mutate(I_XY = round(I_XY,2)) %>% 
+  spread(key = city, value = I_XY, fill = NA) %>%
+  write_csv('figs/clustering_summary.csv')
+  # slice(match(nclust, c('2', '5', '10', 'I(X,Y)')))
+
+loss_curves %>% 
+  group_by(city) %>% 
+  filter(city %in% c('Atlanta', 'Philadelphia')) %>% 
+  summarise(`I(X,Y)` = max(I_XY)) %>% 
+  spread(key = city, value = `I(X,Y)`, fill = NA) %>% 
+  write_csv('figs/max_information.csv')
+  
+  
 
 ```
+
 
 ```{r}
 
