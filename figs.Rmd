@@ -1247,7 +1247,7 @@ g <- g + scale_fill_brewer(palette = 'Set1', guide = guide)
 g <- g %>% cluster_map(city, races, nclusters)  
 
 out_dir <- paste0('figs/prominence_map_Detroit.pdf')
-ggsave(out_dir, width = 14, height = 14, units = 'cm')
+ggsave(out_dir, width = 14, height = 10, units = 'cm')
 embed_fonts(out_dir, outfile=out_dir)
 
 labels <- data_frame(label = c('A', 'B', 'C', 'D', 'E', 'F'),
@@ -1283,23 +1283,28 @@ for(city in c('Chicago', 'Atlanta', 'Detroit', 'Philadelphia')){
   
   if(city %in% c('Detroit', 'Philadelphia')){
     guide <- guide_legend(label.theme = element_text(size = 14, angle = 0))
-    
+  
   }else{
     guide = FALSE
+  }
+  if(city == 'Detroit'){
+    height = 10
+  }else{
+    height = 14
   }
   
   g <- g + scale_fill_brewer(palette = 'Set1', guide = guide)
   
   out_dir <- paste0('figs/prominence_map_', city, '.pdf')
   
-  ggsave(out_dir, width = 14, height = 10, units = 'cm')
+  ggsave(out_dir, width = 14, height = height, units = 'cm')
   embed_fonts(out_dir, outfile=out_dir)
   
   nclusters <- 1:6
   g <- g %>% cluster_map(city, races, nclusters)  
   
   out_dir <- paste0('figs/cluster_map_', city, '.pdf')
-  ggsave(out_dir, width = 14, height = 10, units = 'cm')
+  ggsave(out_dir, width = 14, height = height, units = 'cm')
   embed_fonts(out_dir, outfile=out_dir)
 }
 ```
