@@ -32,7 +32,8 @@ library(rgeos)
 library(extrafont)
 loadfonts()
 
-columns = c('Asian', 'Black', 'Other', 'White', 'Hispanic')
+races   <- c('Asian', 'Black', 'Other', 'White', 'Hispanic')
+columns <- c('Asian', 'Black', 'Other', 'White', 'Hispanic')
 
 if(!dir.exists('figs')){
   dir.create('figs')
@@ -432,7 +433,7 @@ binary_loss_curves <- read_csv('throughput/loss_curves_binary.csv') %>%
 	mutate(I_XY = max(I_XY) - I_XY,
 		   nclust = row_number())
 
-cities <- c('Atlanta','Philadelphia', 'Detroit', 'Chicago')
+cities <- c('Atlanta','Philadelphia', 'Detroit')
 
 compute_AUC <- function(loss_curves, adjust_thresh = 0){
 	loss_curves %>% 
@@ -503,7 +504,7 @@ sub_curves %>%
 	geom_polygon(aes(nclust, I_XY, fill = city), data = filled, alpha = .2) + 
 	geom_text(aes(x = 50, y = .15, label = paste('AUC = ', round(AUC,2))), data = sub_summary, size = 6) + 
 	# geom_text(aes(x = 50, y = .1, label = paste('J(X,Y) = ', round(J_XY,2))), data = sub_summary) +
-	facet_wrap(~city, ncol = 2) + 
+	facet_wrap(~city) + 
   scale_fill_brewer(palette = 'Set1', name = NULL, guide = 'none') +
   scale_color_brewer(palette = 'Set1', name = NULL, guide = 'none') + 
 	# scale_color_discrete(guide = F) + 
@@ -517,7 +518,7 @@ embed_fonts('figs/AUC_illustration.pdf', outfile = 'figs/AUC_illustration.pdf')
 ```{r}
 
 adjust_thresh = 0.01
-highlights  <- c('Philadelphia', 'Atlanta', 'Detroit', 'Chicago')
+highlights  <- c('Philadelphia', 'Atlanta', 'Detroit')
 curves <- binary_loss_curves %>% 
   mutate(exclude = (nclust != 1) & (cummax(I_XY - lag(I_XY,default = 0)) < adjust_thresh) & (nclust < 10)) %>% 
 	filter(!exclude,
@@ -535,9 +536,9 @@ end_points <- highlighted %>%
 	filter(nclust == 10,
 	       city %in% highlights)
 
-end_points <- data.frame(city = c('Atlanta', 'Philadelphia', 'Detroit', 'Chicago'),
-                         nclust = c(50, 7, 8, 1000),
-                         I_XY = c(.35, .175, .38, .42))
+end_points <- data.frame(city = c('Atlanta', 'Philadelphia', 'Detroit'),
+                         nclust = c(50, 7, 8),
+                         I_XY = c(.35, .175, .38))
 
 rects <- highlighted %>% group_by(city) %>% 
 	summarise(xmin = 1, ymin = 0, xmax = max(nclust), ymax = max(I_XY))
@@ -578,7 +579,7 @@ background %>%
 ```{r}
 
 adjust_thresh = 0.01
-highlights  <- c('Philadelphia', 'Atlanta', 'Detroit', 'Chicago')
+highlights  <- c('Philadelphia', 'Atlanta', 'Detroit')
 curves <- loss_curves %>% 
   mutate(exclude = (nclust != 1) & (cummax(I_XY - lag(I_XY,default = 0)) < adjust_thresh) & (nclust < 10)) %>% 
 	filter(!exclude,
@@ -596,9 +597,9 @@ end_points <- highlighted %>%
 	filter(nclust == 10,
 	       city %in% highlights)
 
-end_points <- data.frame(city = c('Atlanta', 'Philadelphia', 'Detroit', 'Chicago'),
-                         nclust = c(50, 7, 8, 1000),
-                         I_XY = c(.36, .19, .46, 0.66))
+end_points <- data.frame(city = c('Atlanta', 'Philadelphia', 'Detroit'),
+                         nclust = c(50, 7, 8),
+                         I_XY = c(.36, .19, .46))
 
 rects <- highlighted %>% group_by(city) %>% 
 	summarise(xmin = 1, ymin = 0, xmax = max(nclust), ymax = max(I_XY))
@@ -970,7 +971,7 @@ for(city in c('Philadelphia', 'Atlanta')){
 }
   
 tab %>% 
-  write_csv('figs/clustering_summary.csv')s
+  write_csv('figs/clustering_summary.csv')
 ```
 
 ```{r}
@@ -978,20 +979,16 @@ loss_curves %>%
   group_by(city) %>% 
   filter(city %in% c('Atlanta', 'Philadelphia'),
          nclust %in% c(2, 5, 10)) %>% 
-  select(-I_diff) %>% 
   mutate(I_XY = round(I_XY,2)) %>% 
   spread(key = city, value = I_XY, fill = NA) %>%
   write_csv('figs/clustering_summary.csv')
   # slice(match(nclust, c('2', '5', '10', 'I(X,Y)')))
 
-loss_curves %>% 
-  group_by(city) %>% 
+cache %>% 
   filter(city %in% c('Atlanta', 'Philadelphia')) %>% 
-  summarise(`I(X,Y)` = max(I_XY)) %>% 
-  spread(key = city, value = `I(X,Y)`, fill = NA) %>% 
+  select(city, I_XY) %>% 
+  spread(key = city, value = I_XY, fill = NA) %>% 
   write_csv('figs/max_information.csv')
-  
-  
 
 ```
 
