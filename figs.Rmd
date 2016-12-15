@@ -991,6 +991,7 @@ loss_curves %>%
 cache %>% 
   filter(city %in% c('Atlanta', 'Philadelphia')) %>% 
   select(city, I_XY) %>% 
+  mutate(I_XY = round(I_XY,2)) %>% 
   spread(key = city, value = I_XY, fill = NA) %>% 
   write_csv('figs/max_information.csv')
 
