@@ -936,6 +936,9 @@ cluster_map_percent_black <- function(tracts_name, city, nclusters = 10){
 
 ```{r}
 
+# check in here: are these binary clustering summaries? If so, we need to fix and get the full 
+# clustering summaries instead. 
+
 tab <- data.frame(city = character(), total_info = numeric(), info_4 = numeric(), info_20 = numeric())
 for(city in c('Philadelphia', 'Atlanta')){
   if(!file.exists(paste0('throughput/clusterings/', city, '_binary'))){
@@ -980,6 +983,7 @@ loss_curves %>%
   filter(city %in% c('Atlanta', 'Philadelphia'),
          nclust %in% c(2, 5, 10)) %>% 
   mutate(I_XY = round(I_XY,2)) %>% 
+  select(city, I_XY, nclust) %>% 
   spread(key = city, value = I_XY, fill = NA) %>%
   write_csv('figs/clustering_summary.csv')
   # slice(match(nclust, c('2', '5', '10', 'I(X,Y)')))
