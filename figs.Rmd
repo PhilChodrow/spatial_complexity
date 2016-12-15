@@ -295,7 +295,7 @@ cluster_map <- function(tracts_name, city, nclusters = 10){
 
 columns = c('Black', 'White', 'Asian', 'Hispanic', 'Other')
 
-cluster_map('Detroit', 'Detroit', nclusters = 6)
+cluster_map('Detroit', 'Detroit', nclusters = 5)
 
 ggsave('figs/example_cluster_map.pdf',  width = 7, height = 5)
 
@@ -358,7 +358,7 @@ ggsave('figs/example_clusters.pdf', width = 10, height = 6)
 ```
 
 ```{r}
-make_cluster_groups('Detroit', 6) %>% 
+make_cluster_groups('Detroit', 5) %>% 
 	mutate(race = factor(race, levels = c('Other', 'Asian', 'Hispanic', 'Black', 'White'))) %>% 
   group_by(cluster) %>% 
   mutate(alpha = p / sum(p),
@@ -1261,7 +1261,7 @@ for(city in info_summary$city){
 ```{r}
 city <- 'Detroit'
 print(city)
-nclusters <- 1:6
+nclusters <- 1:5
 g <- prominence_map(city, races)
 
 guide <- guide_legend(label.theme = element_text(size = 14, angle = 0))
@@ -1274,9 +1274,9 @@ out_dir <- paste0('figs/prominence_map_Detroit.pdf')
 ggsave(out_dir, width = 14, height = 10, units = 'cm')
 embed_fonts(out_dir, outfile=out_dir)
 
-labels <- data_frame(label = c('A', 'B', 'C', 'D', 'E', 'F'),
-                     long   = c(-83.35, -83.1558, -83.164, -82.905, -83.055, -83.1258),
-                     lat  = c(42.37, 42.39, 42.28, 42.4, 42.4, 42.3214)) 
+labels <- data_frame(label = c('A', 'B',  'E', 'C', 'D'),
+                     long   = c(-83.35, -83.1568, -83.132, -82.905, -83.055),
+                     lat  = c(42.37, 42.39, 42.32, 42.4, 42.4)) 
 
 g +
   geom_point(aes(x = long, y = lat), data = labels, size = 9, pch=21, color = 'black', fill = 'white', alpha = .6) + 
@@ -1324,7 +1324,7 @@ for(city in c('Chicago', 'Atlanta', 'Detroit', 'Philadelphia')){
   ggsave(out_dir, width = 14, height = height, units = 'cm')
   embed_fonts(out_dir, outfile=out_dir)
   
-  nclusters <- 1:6
+  nclusters <- 1:5
   g <- g %>% cluster_map(city, races, nclusters)  
   
   out_dir <- paste0('figs/cluster_map_', city, '.pdf')
@@ -1337,7 +1337,7 @@ for(city in c('Chicago', 'Atlanta', 'Detroit', 'Philadelphia')){
 ```{r}
 pal <- RColorBrewer::brewer.pal(name = 'Set1', 5)
 
-make_cluster_groups('Detroit', 6) %>% 
+make_cluster_groups('Detroit', 5) %>% 
 	mutate(race = factor(race, levels = c('Asian', 'Other', 'Hispanic', 'Black', 'White'))) %>% 
   group_by(cluster) %>% 
   mutate(alpha = p / sum(p),

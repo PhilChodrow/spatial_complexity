@@ -4,13 +4,11 @@ library(compx, quietly = TRUE)
 library(plyr, quietly = TRUE)
 library(dplyr, quietly = TRUE)
 library(readr, quietly = TRUE)
-library(ggmap, quietly = TRUE)
 library(tidyr, quietly = TRUE)
 library(magrittr, quietly = TRUE)
-library(ggrepel, quietly = TRUE)
 library(grid, quietly = TRUE)
 library(rgdal, quietly = TRUE)
-library(data.table)
+library(data.table, quietly = TRUE)
 
 races <- c('Black', 'Hispanic', 'Asian', 'White', 'Other')
 
@@ -45,7 +43,7 @@ if(file.exists('throughput/info_cache.csv')){
 		I_XY = numeric(),
 		J_XY = numeric())
 }
-city = 'Boston'
+
 for(city in cities){
 	tracts <- readOGR(dsn = paste0('data/cities/',city),
 	                  layer = 'geo',
@@ -56,7 +54,7 @@ for(city in cities){
 	if(file.exists(grid_tract_path) & dir.exists(grid_dir)){
 	  grid_tract <- read_csv(grid_tract_path)
 	  grid <- readOGR(dsn = paste0('throughput/grids/',city),
-	                  layer = 'geo',
+	                  layer = 'grid',
 	                  verbose = FALSE)
 
 	  print(city)

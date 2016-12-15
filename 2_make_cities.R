@@ -15,7 +15,7 @@ cities <- cities[!is.element(cities, list.dirs('cities', full.names = FALSE))]
 
 states <- city_df$state %>% 
 	str_split('--') %>% 
-	do.call(c,.) %>% 
+	# do.call(c,.) %>% 
 	unique()
 
 shapes <- list()
@@ -49,7 +49,14 @@ for(city in cities){
 																	                                 "data.frame")))))
 	}
 	city_polys <- do.call(rbind, city_components)
+	city_polys@data <- city_polys@data %>%
+	  mutate(total = Asian + Black + Hispanic + Other + White)
 	city_polys <- city_polys[city_polys@data$total != 0,]
+	if(city == 'Philadelphia'){
+	  exclude <- c('421010098023','421010098022', '421010098021', '421010098011',  '421010098012')
+	  city_polys <- city_polys[!(city_polys@data$GEOID %in% exclude),]   
+	}
+	
 	tryCatch(writeOGR(city_polys, paste0("data/cities/", city),
 	                  'geo', 
 	                  driver = 'ESRI Shapefile', 
