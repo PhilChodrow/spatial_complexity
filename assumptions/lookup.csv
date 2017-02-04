@@ -1,0 +1,47 @@
+row_num,old,new,type
+1,Educational Attainment for the Population 25 Years and Over: Total:,DELETE,education
+2,Educational Attainment for the Population 25 Years and Over: No schooling completed,no diploma,education
+3,Educational Attainment for the Population 25 Years and Over: Nursery school,no diploma,education
+4,Educational Attainment for the Population 25 Years and Over: Kindergarten,no diploma,education
+5,Educational Attainment for the Population 25 Years and Over: 1st grade,no diploma,education
+6,Educational Attainment for the Population 25 Years and Over: 2nd grade,no diploma,education
+7,Educational Attainment for the Population 25 Years and Over: 3rd grade,no diploma,education
+8,Educational Attainment for the Population 25 Years and Over: 4th grade,no diploma,education
+9,Educational Attainment for the Population 25 Years and Over: 5th grade,no diploma,education
+10,Educational Attainment for the Population 25 Years and Over: 6th grade,no diploma,education
+11,Educational Attainment for the Population 25 Years and Over: 7th grade,no diploma,education
+12,Educational Attainment for the Population 25 Years and Over: 8th grade,no diploma,education
+13,Educational Attainment for the Population 25 Years and Over: 9th grade,no diploma,education
+14,Educational Attainment for the Population 25 Years and Over: 10th grade,no diploma,education
+15,Educational Attainment for the Population 25 Years and Over: 11th grade,no diploma,education
+16,"Educational Attainment for the Population 25 Years and Over: 12th grade, no diploma",no diploma,education
+17,Educational Attainment for the Population 25 Years and Over: Regular high school diploma,high school,education
+18,Educational Attainment for the Population 25 Years and Over: GED or alternative credential,high school,education
+19,"Educational Attainment for the Population 25 Years and Over: Some college, less than 1 year",some college,education
+20,"Educational Attainment for the Population 25 Years and Over: Some college, 1 or more years, no degree",some college,education
+21,Educational Attainment for the Population 25 Years and Over: Associate's degree,associate's,education
+22,Educational Attainment for the Population 25 Years and Over: Bachelor's degree,bachelor's,education
+23,Educational Attainment for the Population 25 Years and Over: Master's degree,master's,education
+24,Educational Attainment for the Population 25 Years and Over: Professional school degree,professional,education
+25,Educational Attainment for the Population 25 Years and Over: Doctorate degree,doctorate,education
+26,Hispanic or Latino by Race: Total:,DELETE,race
+27,Hispanic or Latino by Race: Not Hispanic or Latino:,DELETE,race
+28,Hispanic or Latino by Race: Not Hispanic or Latino: White alone,white,race
+29,Hispanic or Latino by Race: Not Hispanic or Latino: Black or African American alone,black,race
+30,Hispanic or Latino by Race: Not Hispanic or Latino: American Indian and Alaska Native alone,other,race
+31,Hispanic or Latino by Race: Not Hispanic or Latino: Asian alone,asian,race
+32,Hispanic or Latino by Race: Not Hispanic or Latino: Native Hawaiian and Other Pacific Islander alone,other,race
+33,Hispanic or Latino by Race: Not Hispanic or Latino: Some other race alone,other,race
+34,Hispanic or Latino by Race: Not Hispanic or Latino: Two or more races:,other,race
+35,Hispanic or Latino by Race: Not Hispanic or Latino: Two or more races: Two races including Some other race,other,race
+36,"Hispanic or Latino by Race: Not Hispanic or Latino: Two or more races: Two races excluding Some other race, and three or more races",other,race
+37,Hispanic or Latino by Race: Hispanic or Latino:,DELETE,race
+38,Hispanic or Latino by Race: Hispanic or Latino: White alone,hispanic,race
+39,Hispanic or Latino by Race: Hispanic or Latino: Black or African American alone,hispanic,race
+40,Hispanic or Latino by Race: Hispanic or Latino: American Indian and Alaska Native alone,hispanic,race
+41,Hispanic or Latino by Race: Hispanic or Latino: Asian alone,hispanic,race
+42,Hispanic or Latino by Race: Hispanic or Latino: Native Hawaiian and Other Pacific Islander alone,hispanic,race
+43,Hispanic or Latino by Race: Hispanic or Latino: Some other race alone,hispanic,race
+44,Hispanic or Latino by Race: Hispanic or Latino: Two or more races:,hispanic,race
+45,Hispanic or Latino by Race: Hispanic or Latino: Two or more races: Two races including Some other race,hispanic,race
+46,"Hispanic or Latino by Race: Hispanic or Latino: Two or more races: Two races excluding Some other race, and three or more races",hispanic,race

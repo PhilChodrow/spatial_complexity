@@ -1,0 +1,699 @@
+---
+title: "Figures for The *Spatial Structure of Segregation*"
+author: "Phil Chodrow"
+date: "1/22/2017"
+output: 
+  html_document:
+    theme: journal
+    toc: true
+    toc_float: true
+---
+
+# Introduction
+
+The purpose of this document is to generate and lightly explain the figures used in "The Spatial Structure of Segregation." For more complete documentation, please see the technical report. 
+
+# Setup
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.height = 4, fig.width = 6)
+```
+
+
+```{r}
+library(tidyverse)
+library(rgeos)
+library(maptools)
+library(scales)
+library(ggthemes)
+library(ggrepel)
+library(igraph)
+library(compx)
+library(RColorBrewer)
+library(gplots)
+library(viridis)
+library(ggmap)
+```
+
+```{r}
+if(!dir.exists('figs')){
+    dir.create('figs')
+}
+```
+
+
+# Metric Structure
+
+First we read in the data...
+```{r}
+
+city     <- 'Detroit'
+input    <- readRDS(paste0('throughput/metric/', city, '.RDS'))
+f_tracts <- input$tracts %>%
+    fortify(region = 'GEOID')
+
+metric_df <- input$metric_df 
+
+f_tracts <- f_tracts %>% 
+    left_join(metric_df, by = c('id' = 'geoid')) 
+```
+
+And now we plot. 
+
+```{r}
+# the tr/4 is from our existence theorem
+f_tracts %>% 
+    ggplot() + 
+    aes(x = long, y = lat, fill = tr/4, group = group) + 
+    geom_polygon() + 
+    scale_fill_viridis(option = 'magma' , 
+                                trans = 'log10',
+                       limits = c(NA, 12e-1),
+                                oob = squish) +
+    theme_map() + 
+    theme(legend.justification = c(0,0), 
+          legend.position      = c(.8,.1),
+          panel.background = element_rect(fill = 'grey80', color = NA),
+          legend.background = element_rect(fill = NA)) + 
+    guides(fill = guide_colorbar(ticks = F, title = expression(tr~italic(g[x]))))
+
+ggsave('figs/local_density.pdf')
+
+```
+
+## Comparative Information Density
+
+```{r}
+scatterplot_theme <- function(){
+     layout <- theme_bw() %+replace%
+         theme(axis.ticks.y = element_line(size = 0, color = 'black'),
+          axis.ticks.x = element_line(size = .2, color = 'black'),
+          axis.ticks.length=unit(-0.25, "cm"), 
+          axis.text.x = element_text(size = 11, margin=unit(c(0.5,0.5,0.5,0.5), "cm")), 
+          axis.text.y = element_text(size = 11, margin=unit(c(0.5,0.5,0.1,0.5), "cm")),
+          axis.title.y = element_text(margin=unit(c(0.1,-0.5,0.1,0.1), "cm"), angle = 90),
+          axis.title.x = element_text(margin=unit(c(0,0,-0.1,-1), "cm"))) 
+    
+    list(layout)
+}
+```
+
+
+```{r}
+
+summary <- read_csv('throughput/metric.csv')
+
+# summary <- summary %>% 
+#     mutate(p_vol = p_vol / max(p_vol),
+#            p_trace = p_trace / max(p_trace))
+
+highlight <- summary %>% 
+    filter(I_XY < 0 | I_XY > .35) 
+
+
+ summary %>% 
+    ggplot() + 
+    aes(x = p_vol, y = p_trace) + 
+    scale_y_continuous(trans = 'log10') +
+    scale_x_continuous(trans = 'log10') +
+    geom_point(color = 'grey') + 
+    geom_point(color = 'firebrick', data = highlight) + 
+    geom_text_repel(aes(label = city), data = highlight) +
+    scatterplot_theme() + 
+    xlab(expression(italic(E[X]) ~ sqrt(~det~g[X]))) + 
+    ylab(expression(italic(E[X]) ~ (tr ~~  g[X]))) + 
+    annotation_logticks(scaled = TRUE, size = .2, sides = 'lb')
+    
+ 
+ ggsave('figs/average_geometry.pdf')
+
+```
+
+
+```{r}
+summary <- read_csv('throughput/metric.csv')
+
+highlight <- summary %>% 
+    filter(I_XY < 0 | I_XY > .35) 
+
+summary %>% 
+    ggplot() + 
+    aes(x = I_XY, y = p_trace) + 
+    scale_y_continuous(trans = 'log10') + 
+    geom_point(color = 'grey') + 
+    geom_point(color = 'firebrick', data = highlight) + 
+    geom_text_repel(aes(label = city), data = highlight) +
+    scatterplot_theme() + 
+    ylab(expression(italic(E[X]) ~ (tr ~~  g[X]))) + 
+    xlab(expression(italic(I(X,Y)))) + 
+    annotation_logticks(scaled = TRUE, size = .2, sides = 'l') + 
+    
+ggsave('figs/density_mutual.pdf')
+```
+
+# Network Structure
+
+## Spectra
+```{r}
+spectra <- read_csv('throughput/spectra.csv')
+
+cities <- c('Philadelphia', 'Detroit', 'Atlanta', 'Chicago', 'New York City')
+highlight <- spectra %>% 
+    filter(city %in% cities)
+```
+
+```{r}
+
+spectra_theme <- function(){
+    
+    layout <- theme_bw() %+replace%
+    theme(axis.ticks.y = element_line(size = .2, color = 'black'),
+          axis.ticks.x = element_line(size = .2, color = 'black'),
+          axis.ticks.length=unit(-0.25, "cm"),
+          axis.text.x = element_text(size = 11, margin=unit(c(0.5,0.5,0.5,0.5), "cm")), 
+          axis.text.y = element_text(size = 11, margin=unit(c(0.5,0.5,0.1,0.0), "cm")),
+          axis.title.y = element_text(margin=unit(c(0.1,-0.1,0.5,0.5), "cm"), angle = 90)
+          ) 
+    
+    list(layout, 
+         scale_color_brewer(palette = 'Set1'),
+         guides(color = guide_legend(title = element_blank())))
+    # scale_color_brewer(palette = 'Set1') %+replace% 
+    # guides(color = guide_legend(title = element_blank())) 
+}
+
+```
+
+
+
+```{r}
+
+spectra %>% 
+    ggplot() + 
+    aes(x = n, y = 1-eig, group = city) + 
+    geom_line(color = 'grey', alpha = 1, size = .3) + 
+    scale_y_continuous(trans = 'log10', limit = c(8e-2, NA), expand=c(0,0)) + 
+    scale_x_continuous(limit = c(0, 100), expand=c(0,0)) + 
+    geom_line(aes(color = city),  data = highlight, size = 1) + 
+    geom_point(data = highlight, size = .1, color = 'black') + 
+    ylab(expression(1-lambda[italic(n)])) + 
+    xlab(expression(italic(n))) + 
+    annotation_logticks(scaled = T, sides = 'l', size = .2) +
+    spectra_theme() + 
+    theme(axis.ticks.y = element_line(size = 0, color = 'black'))
+    
+
+ggsave('figs/spectra.pdf')
+
+```
+
+## Differenced Spectra
+```{r}
+
+spectra <- spectra %>% 
+    mutate(diff = lead(eig) / eig)
+
+highlight <- spectra %>%
+    filter(city %in% cities)
+
+spectra %>% 
+    ggplot() + 
+    aes(x = n, y = diff, group = city) + 
+    geom_line(alpha = .5, color = 'grey') +
+    geom_line(aes(color = city), data = highlight, size = .7) + 
+    geom_point(data = highlight, size = .5, color = 'black') +
+    scale_x_continuous(limits = c(2, 25)) +
+    scale_y_continuous(limits = c(1, 3.5)) +
+    ylab(expression(lambda[italic(n+1)] /lambda[italic(n)])) +
+    xlab(expression(italic(n))) + 
+    spectra_theme()
+
+ggsave('figs/spectra_differenced.pdf')
+
+```
+
+What happens when we incorporate area?
+
+```{r, echo = FALSE, eval = FALSE}
+
+area_df <- summary %>% 
+    select(city, total_area)
+
+spectra <- spectra %>% 
+    # left_join(area_df) %>% 
+    group_by(city) %>%
+    mutate(scale = n/max(n)) %>% 
+    ungroup()
+
+spectra <- spectra %>% 
+    mutate(diff = (1-eig) / (1-lead(eig)))
+
+highlight <- spectra %>%
+    filter(city %in% cities, scale < .1)
+
+spectra %>% 
+    filter(scale <= .1) %>%
+    ggplot() + 
+    aes(x = scale, y = diff, group = city) + 
+    # geom_point(size = 2) + 
+    geom_line(color = 'grey') + 
+    geom_line(aes(color = city),  data = highlight, size = 1) +
+    # geom_point(data = highlight, size = 1, color = 'black') + 
+    # scale_x_continuous(limits = c(1, 30)) +
+    scale_y_continuous(limits = c(1, 3.7)) +
+    theme_bw() + 
+    # ylab(expression(1-lambda[italic(n)])) + 
+    xlab(expression(italic(n))) + 
+    # annotation_logticks(scaled = T, sides = 'l', size = .2) + 
+    theme(axis.ticks.y = element_line(size = .2, color = 'black'),
+          axis.ticks.x = element_line(size = .2, color = 'black'),
+          legend.position = 'bottom') + 
+    ggtitle('Spectra of selected cities') + 
+    scale_color_brewer(palette = 'Set1') + 
+    guides(color = guide_legend(title = element_blank())) 
+
+
+
+
+```
+
+What about when we normalize n? 
+
+
+```{r}
+
+normed_spectra <- spectra %>%
+    group_by(city) %>% 
+    mutate(n = n/max(n))
+
+normed_highlight <- normed_spectra %>% 
+    filter(city %in% cities)
+
+normed_spectra %>% 
+    ggplot() + 
+    aes(x = n, y = 1-eig, group = city) + 
+    geom_line(color = 'grey', alpha = 1, size = .3) + 
+    scale_y_continuous(trans = 'log10', limit = c(1e-1, NA), expand=c(0,0)) + 
+    scale_x_continuous(limit = c(0.001, .5), expand=c(0,0), trans = 'log10') +
+    geom_line(aes(color = city),  data = normed_highlight, size = 1) + 
+    geom_point(data = normed_highlight, size = .3, color = 'black') + 
+    theme_bw() + 
+    ylab(expression(1-lambda[italic(n)])) + 
+    xlab(expression(italic(n))) + 
+    annotation_logticks(scaled = T, sides = 'l', size = .2) + 
+    theme(axis.ticks.y = element_line(size = .2, color = 'black'),
+          axis.ticks.x = element_line(size = .2, color = 'black'),
+          legend.position = 'bottom') + 
+    ggtitle('Spectra of selected cities') + 
+    scale_color_brewer(palette = 'Set1') + 
+    guides(color = guide_legend(title = element_blank())) 
+
+ggsave('figs/normed_spectra.pdf')
+
+```
+
+
+```{r}
+
+spectral_properties <- spectra %>% 
+    group_by(city) %>% 
+    filter(n >= 10 | eig  > 1e-10) %>% 
+    filter(eig < 1) %>% 
+    summarise(aff_trace =   sum( 1 - eig),
+              aff_det   = - sum(log(1-eig))) %>%
+    arrange(desc(aff_trace))
+
+spectral_properties %>% 
+    left_join(summary, by = c('city' = 'city')) %>% 
+    ggplot() + 
+    aes(x = aff_trace, y = total_vol) + 
+    geom_point() +
+    geom_text_repel(aes(label = city)) + 
+    scale_y_continuous(trans = 'log10') + 
+    scale_x_continuous(trans = 'log10') + 
+    geom_smooth() + 
+    ggtitle('Correlation between the trace of the affinity matrix and information volume.')
+
+```
+
+## Clustering
+
+First we'll do ths clustering. 
+```{r, fig.height = 6, fig.width = 10}
+g <- readRDS(paste0('throughput/graphs/',city,'.RDS'))
+A <- affinity_matrix(g, sigma = 1)
+sigma <- 1
+clust <- hclust(as.dist(-A),  method = 'complete')
+pal   <- brewer.pal(9, name = "Set1") %>%
+	colorRampPalette()
+
+ncluster <- 7
+g <- g %>% set_vertex_attr(name = 'cluster', index = colnames(A), value = clust %>% cutree(ncluster))
+
+```
+
+## Geodesics and Space Distortion
+
+```{r}
+k <- 600
+center <- V(g)[[k]]$name
+center_coords <- data_frame(x = V(g)[[k]]$x, y = V(g)[[k]]$y)
+
+dists <- g %>% igraph::distances(weights = E(g)$dist)
+
+dist_lookup <- dists[,center] %>% 
+    as.data.frame() %>% 
+    rownames_to_column(var = 'geoid') 
+
+names(dist_lookup) <- c('geoid', 'dist')
+
+f_tracts %>% 
+    left_join(dist_lookup, by = c('id' = 'geoid')) %>% 
+    ggplot() + 
+    aes(x = long, y = lat, group = group, fill = dist) %>% 
+    geom_polygon() + 
+    scale_fill_viridis(option = 'magma' , 
+                                oob = squish) +
+    theme_map() + 
+    theme(legend.justification = c(0,0), 
+          legend.position      = c(.8,.1),
+          panel.background = element_rect(fill = 'grey80', color = NA),
+          legend.background = element_rect(fill = NA)) + 
+    guides(fill = guide_colorbar(ticks = F, title = expression(d[gamma]))) + 
+    geom_point(aes(x,y), data = center_coords, color = 'white')
+    
+ggsave('figs/geo_distance.pdf')
+```
+
+## Bare network structure
+
+Visualization of network structure in Detroit. The weight of each line segment is proportional to the affinity between the tracts it connects. 
+```{r}
+edges <- g %>% as_long_data_frame() %>% tbl_df()
+nodes <- data_frame(x = V(g)$x, y = V(g)$y, cluster = as.character(V(g)$cluster))
+
+ggplot() + 
+    geom_polygon(aes(x = long, y = lat, group = group), fill = 'grey10', alpha = .7, data = f_tracts) +
+    geom_segment(aes(x = from_x, y = from_y, xend = to_x, yend = to_y, size = exp(-7 * dist^2), alpha = exp(-7 * dist^2)), color = 'white', data = edges) +
+    theme_map() +
+    scale_size_continuous(range = c(0,.5)) + 
+    guides(alpha = 'none', color = 'none', size = 'none') +
+    theme(panel.background = element_rect(fill = 'grey80', color = NA))
+
+ggsave('figs/network_structure.pdf')
+
+```
+
+Now we'll have the color of the edge proportional to its geodesic distance. 
+
+```{r}
+edges <- g %>% as_long_data_frame() %>% tbl_df()
+nodes <- data_frame(x = V(g)$x, y = V(g)$y, cluster = as.character(V(g)$cluster))
+
+ggplot() + 
+    geom_polygon(aes(x = long, y = lat, group = group), fill = 'grey80', alpha = .6, data = f_tracts) +
+    geom_segment(aes(x = from_x, y = from_y, xend = to_x, yend = to_y, color = dist), data = edges) +
+    theme_map() +
+    scale_color_viridis(option = 'magma', trans = 'log10') + 
+    guides(alpha = 'none', color = 'none', size = 'none') +
+    theme(panel.background = element_rect(fill = 'grey80', color = NA))
+
+ggsave('figs/network_structure_colored.pdf')
+
+```
+
+
+This one is a little bit busier, but shows fairly nicely how the network is most strongly separated at points of high curvature. 
+
+
+```{r}
+edges <- g %>% as_long_data_frame() %>% tbl_df()
+nodes <- data_frame(x = V(g)$x, y = V(g)$y, cluster = as.character(V(g)$cluster))
+
+ggplot() + 
+    geom_polygon(aes(x = long, y = lat, fill = vol/area, group = group), data = f_tracts) + 
+    scale_fill_viridis(option = 'magma' , 
+                                trans = 'log10', 
+                                oob = squish) +
+    geom_segment(aes(x = from_x, y = from_y, xend = to_x, yend = to_y, size = exp(-10 * dist)), color = 'white', data = edges) +
+    theme_map() +
+    scale_size_continuous(range = c(0,1)) + 
+    guides(alpha = 'none', color = 'none', size = 'none') +
+    theme(panel.background = element_rect(fill = 'grey80', color = NA),
+          legend.justification = c(0,0), 
+          legend.position      = c(.8,.1),
+          legend.background = element_rect(fill = NA)) + 
+    guides(fill = guide_colorbar(ticks = F, title = expression(rho)))
+
+ggsave('figs/network_structure_curvature.pdf')
+```
+
+
+Now let's do it with spectral clustering. 
+
+```{r}
+
+A <- affinity_matrix(g, sigma = 2)
+L <- generalized_laplacian_matrix(A)
+evL <- eigen(L, symmetric=TRUE)
+
+# let's pick a number of clusters by checking out the spectrum. 
+test_df <- data_frame(n = 1:nrow(A), eig = rev(evL$values)) %>% 
+	mutate(eig = eig - min(eig),
+		   eig = eig / max(eig)) %>% 
+	mutate(val = lead(eig) / eig) %>% 
+	filter(n < 50)
+	
+plot(test_df$val, log = 'y')
+
+```
+
+
+
+```{r}
+
+make_clusters <- function(k, nreps = 1000){
+    Z <- evL$vectors[,(ncol(evL$vectors)-k+1):(ncol(evL$vectors))]
+    
+    models <- data_frame(n = 1:nreps) %>% 
+    	dplyr::mutate(model = map(n, ~ kmeans(Z, centers = k))) %>% 
+    	mutate(perf = map_dbl(model, ~.$tot.withinss))
+    
+    model <- models %>% 
+    	filter(perf == min(perf))
+    km <- model$model[[1]]
+    return(km$cluster)
+}
+
+get_node_df <- function(k){
+    h <- g %>% set.vertex.attribute('cluster', value = make_clusters(k)) 
+    data_frame(geoid = V(h)$name, 
+               x = V(h)$x, 
+               y = V(h)$y, 
+               cluster = V(h)$cluster, 
+               k = k)
+}
+
+
+```
+
+
+
+```{r}
+
+ks <- c(2, 6, 10, 15)
+
+clusters <- ks %>% 
+    map(get_node_df) %>% 
+    reduce(rbind)
+
+pal <- brewer_pal(palette = 'Set1')
+pal <- colorRampPalette(pal(9))
+pal <- pal(max(ks))
+
+ggplot() + 
+	geom_segment(aes(x = from_x, y = from_y, xend = to_x, yend = to_y, size = exp(-5 * dist^2)), color = 'black', alpha = .5, data = edges) +
+	theme_map() +
+	scale_size_continuous(range = c(0,1)) + 
+	guides(alpha = 'none', color = 'none', size = 'none') +
+	theme(panel.background = element_rect(fill = 'grey80', color = NA)) + 
+	geom_point(aes(x, y, color = as.character(cluster)), data = clusters) + 
+    scale_color_manual(values = pal) + 
+    facet_wrap(~k, nrow = 3)
+
+ggsave('figs/spectral_clustered.pdf')
+
+```
+
+```{r}
+
+label_generator <- function(variable, value){
+    return(paste0('k = ', value))
+}
+
+f_tracts %>% 
+    left_join(clusters, by = c('id' = 'geoid')) %>% 
+    ggplot() + 
+    aes(x = long, y = lat, fill = as.character(cluster), group = id) + 
+    facet_wrap(~k, nrow = 2, labeller = label_generator) + 
+    geom_polygon() + 
+    theme_map() +
+    theme(panel.background = element_rect(fill = 'grey80', color = NA)) + 
+    scale_fill_manual(values = pal) +
+    guides(fill = FALSE) 
+
+ggsave('figs/clustered_maps.pdf')
+    
+
+```
+
+
+
+
+## Matrix Structure
+
+Now let's visualize the affinity matrix! We can use hierarchical clustering for this task. 
+
+```{r}
+sigma = 1
+affinity_matrix_viz <- function(city){
+    g <- readRDS(paste0('throughput/graphs/',city,'.RDS'))
+    A <- affinity_matrix(g, sigma = sigma)
+    
+    clust <- hclust(as.dist(-A),  method = 'complete')
+    
+    the_order <- data_frame(geoid = clust$labels[clust$order], order = 1:length(clust$labels))
+    
+    A %>% 
+        as.data.frame() %>% 
+        rownames_to_column('geoid_1') %>% 
+        tbl_df() %>% 
+        gather(geoid_2, a, -geoid_1) %>% 
+        left_join(the_order, by = c('geoid_1' = 'geoid')) %>% 
+        dplyr::rename(x = order) %>%
+        left_join(the_order, by = c('geoid_2' = 'geoid')) %>% 
+        dplyr::rename(y = order) %>% 
+        ggplot() + 
+        aes(x = x, y = y, fill = a) + 
+        geom_raster() + 
+        scale_fill_viridis(option = 'viridis') + 
+        # theme_map() +
+        theme(legend.position = 'right',
+              axis.line=element_blank(),
+              axis.text.x=element_blank(),
+              axis.text.y=element_blank(),
+              axis.ticks=element_blank(),
+              axis.title.x=element_blank(),
+              axis.title.y=element_blank()) + 
+        scale_x_continuous(expand = c(0,0)) + 
+        scale_y_continuous(expand = c(0,0)) + 
+        guides(fill = guide_colorbar(ticks = F, title = expression(italic(A))))
+}
+
+```
+
+
+```{r, fig.width = 5}
+affinity_matrix_viz('Atlanta')
+ggsave('figs/Atlanta_affinity.pdf')
+```
+
+```{r, fig.width = 5}
+affinity_matrix_viz('Detroit')
+ggsave('figs/Detroit_affinity.pdf')
+```
+
+
+
+```{r}
+
+prominence_map <- function(tracts){
+    tracts <- input$tracts
+
+    demographics <- read_csv('data/demographics.csv') %>% 
+        dplyr::mutate(tract = as.character(GEOID),
+               tract = stringr::str_pad(tract, 12, side = 'left', pad = '0')) %>% 
+        select(-GEOID) 
+    
+    data <- demographics %>% 
+        filter(tract %in% tracts$GEOID)
+    
+    marginal <- data %>% 
+        group_by(group) %>% 
+        summarise(n = sum(n)) %>%
+        mutate(n = n / sum(n))
+    
+    f <- function(df){
+        df$group[which.max(df$n *  log(df$n / marginal$n))][1]
+    }
+    
+    g <- function(df){
+        max(df$n *  log(df$n / marginal$n), na.rm = T)
+    }
+    
+    prominence_df <- data %>% 
+        group_by(tract) %>% 
+        mutate(n = n / sum(n)) %>% 
+        nest(-tract, .key = df) %>% 
+        mutate(prominent_group = map_chr(df, f),
+               prominence = map_dbl(df, g)) 
+        
+    g <- tracts %>% fortify(region = 'GEOID') %>% 
+          tbl_df() %>% 
+          left_join(prominence_df, by = c('id' = 'tract')) %>% 
+          ggplot() + 
+          geom_polygon(aes(x = long, 
+                           y = lat, 
+                           fill = prominent_group, 
+                           group = group, 
+                           alpha = prominence))  +
+          ggthemes::theme_map() + 
+          scale_alpha_continuous(guide = 'none', limits = c(0,1)) +
+          theme(plot.title = element_text(size=20, vjust = -5),
+                legend.title = element_blank(),
+                legend.position = c(.7, .1))
+      g
+}
+```
+
+Generate Detroit, with legend
+
+```{r}
+city  <- 'Detroit'
+input <- readRDS(paste0('throughput/metric/', city, '.RDS'))
+
+prominence_map(input$tracts) + 
+    scale_fill_brewer(palette = 'Set1') 
+
+ggsave('figs/detroit_prominence.pdf')
+```
+
+Generate Atlanta, no legend
+```{r}
+city  <- 'Atlanta'
+input <- readRDS(paste0('throughput/metric/', city, '.RDS'))
+
+prominence_map(input$tracts) + 
+    scale_fill_brewer(palette = 'Set1') + 
+    guides(fill = FALSE)
+
+ggsave('figs/atlanta_prominence.pdf')
+```
+
+```{r}
+city  <- 'Newark'
+input <- readRDS(paste0('throughput/metric/', city, '.RDS'))
+
+prominence_map(input$tracts) + 
+    scale_fill_brewer(palette = 'Set1') + 
+    guides(fill = FALSE)
+
+ggsave('figs/newark_prominence.pdf')
+
+```
+
+# Session Info
+```{r}
+sessionInfo()
+```
+
