@@ -1,0 +1,763 @@
+---
+title: "7_cluster_figs"
+author: "phil"
+date: "7/17/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
+```
+
+```{r}
+map_width <- 4
+map_height <- 3
+```
+
+
+```{r}
+library(magrittr)
+library(tidyverse)
+library(scales)
+library(ggthemes)
+library(ggrepel)
+library(igraph)
+library(compx)
+library(RColorBrewer)
+library(gplots)
+library(viridis)
+library(ggmap)
+library(sf)
+
+knitr::read_chunk('R/utils.R')
+
+# source('R/utils.R')
+```
+
+```{r utils}
+```
+
+
+```{r}
+all_data <- read_csv('data/demographics.csv', 
+                 col_types = cols(
+                     GEOID = col_character()
+                     )
+                 ) %>% 
+    rename(tract = GEOID) %>% 
+    group_by(tract) %>% 
+    filter(sum(n) > 0) %>% 
+    ungroup() 
+```
+
+```{r}
+df <- data_frame(city = character(), 
+                 k = integer(), 
+                 j = integer(),
+                 hclust = numeric(), 
+                 mixed = numeric())
+```
+
+```{r}
+loss_curves <- data_frame(city = character(),
+                          k = integer(),
+                          h_val = numeric(), 
+                          m_val = numeric())
+```
+
+```{r}
+MI <- data_frame(city = character(), 
+                 I_XY = numeric())
+```
+
+
+# Detroit
+
+```{r}
+city <- 'Detroit'
+in_data <- read_data(city, all_data)
+data    <- in_data$data
+tracts  <- in_data$tracts
+```
+
+```{r}
+g <- construct_information_graph(tracts = tracts, 
+								 data = data, 
+								 divergence = js_dist)
+
+sigma <- 30
+plot_spectrum(g, sigma)
+
+ggsave(paste0('figs/spectrum_', city, '.pdf'))
+
+```
+
+```{r}
+k     <- 34
+g     <- spectral_cluster(g, sigma = sigma, k = k, nreps = 1000)
+```
+
+```{r}
+input <- group_data(tracts, data, g) 
+blocked_tracts <- input$blocked_tracts
+blocked_data <- input$blocked_data
+```
+
+
+
+
+## Hierarchical Clustering
+
+```{r}
+b <- h_clust(tracts, data)
+a <- h_clust(blocked_tracts, blocked_data)
+```
+
+```{r}
+compare_hclusts(a, b)
+```
+
+```{r}
+
+j <- 7
+
+m <- prominence_map(tracts, data) 
+
+ggsave(paste0('figs/prominence_', city, '.pdf'), width = map_width, height = map_height)
+
+s <- s_clust_map(m, tracts, data, blocked_tracts, size_coef = 1)
+s
+
+ggsave(paste0('figs/sclust_', city, '.pdf'), width = map_width, height = map_height)
+
+h <- h_clust_map(m, blocked_tracts, blocked_data, a, j, size_coef = 1)
+h
+
+ggsave(paste0('figs/mixed_', city,'.pdf'), width = map_width, height = map_height)
+
+```
+
+```{r}
+f <- h_clust_map(m, tracts, data, b, j, size_coef = 1)
+f
+ggsave(paste0('figs/hclust_', city,'.pdf'), width = map_width, height = map_height)
+```
+
+
+```{r}
+# total MI
+data %>% 
+    spread(key = group, value = n) %>% 
+    select(-tract) %>% 
+    mutual_info()
+```
+
+```{r}
+df <- df %>% 
+    rbind(data_frame(
+        city = city, 
+        j = j,
+        k = k, 
+        hclust = cumsum(rev(b$height))[j],
+        mixed = cumsum(rev(a$height))[j]
+    ))
+
+```
+
+```{r}
+loss_curves <- loss_curves %>%
+    rbind(data_frame(
+        city = city, 
+        k = 1:length(a$height),
+        h_val = rev(b$height)[1:length(a$height)],
+        m_val = rev(a$height)
+    ))
+
+MI <- MI %>% 
+    rbind(data_frame(
+        city = city, 
+        I_XY = data %>% 
+            spread(key = group, value = n) %>% 
+            select(-tract) %>% 
+            mutual_info()
+    ))
+```
+
+
+
+
+### Add place decomposition for first fig
+
+```{r}
+detroit <- st_union(tracts)
+
+detroit_places <- tigris::places(c(26), cb = FALSE, year = 2015, refresh = FALSE) %>% 
+	st_as_sf()
+
+st_crs(detroit_places) <- st_crs(tracts)
+
+places <- detroit_places %>% 
+	mutate(include = st_intersects(detroit_places, detroit),
+		   include = map_dbl(include, ~ifelse(length(.) == 0, 0, 1))) %>% 
+	filter(include == 1) %>% 
+	st_intersection(detroit) %>% 
+    mutate(type = st_geometry_type(geometry)) %>%
+    filter(type != 'GEOMETRYCOLLECTION')
+
+m + 
+	geom_sf(data = places, alpha = 0, size = .5, color = 'black') + 
+    theme(legend.text = element_text(size = 8))
+	
+ggsave('figs/detroit_places.pdf', width = map_width, height = map_height)
+
+```
+
+```{r}
+lookup <- st_join(tracts, detroit_places, st_within) %>% 
+    select(GEOID.x, NAME.y) %>% 
+    select(-geometry)
+
+data %>% 
+    left_join(lookup, by = c('tract' = 'GEOID.x')) %>% 
+    mutate(NAME = ifelse(is.na(NAME.y), 'NA', NAME.y)) %>% 
+    group_by(NAME, group) %>% 
+    summarise(n = sum(n)) %>% 
+    ungroup() %>% 
+    spread(key = group, value = n) %>%
+    select(-NAME) %>% 
+    mutual_info()
+
+```
+
+```{r}
+
+data %>% 
+    spread(key = group, value = n) %>% 
+    select(-tract) %>% 
+    mutual_info()
+
+```
+
+
+
+# Chicago
+
+```{r}
+city    <- 'Chicago'
+in_data <- read_data(city, all_data)
+data    <- in_data$data
+tracts  <- in_data$tracts
+
+b <- h_clust(tracts, data)
+```
+
+```{r}
+g <- construct_information_graph(tracts = tracts, 
+								 data = data, 
+								 divergence = js_dist)
+
+sigma <- 30
+plot_spectrum(g, sigma)
+ggsave(paste0('figs/spectrum_', city, '.pdf'))
+```
+
+```{r}
+k     <- 36
+g     <- spectral_cluster(g, sigma = sigma, k = k, nreps = 1000)
+```
+
+```{r}
+input <- group_data(tracts, data, g) 
+blocked_tracts <- input$blocked_tracts
+blocked_data <- input$blocked_data
+
+blocked_tracts %>% 
+    ggplot() + 
+    geom_sf(aes(fill = as.character(cluster))) +
+    guides(fill = FALSE)
+```
+
+## Hierarchical Clustering
+
+```{r}
+a <- h_clust(blocked_tracts, blocked_data)
+compare_hclusts(a, b)
+```
+
+```{r}
+
+j <- 11
+
+m <- prominence_map(tracts, data) + 
+        guides(fill = FALSE) 
+
+s <- s_clust_map(m, tracts, data, blocked_tracts, size_coef = 1)
+s
+
+ggsave(paste0('figs/sclust_', city, '.pdf'), width = map_width, height = map_height)
+
+
+h <- h_clust_map(m, blocked_tracts, blocked_data, a, j, size_coef = 1)
+
+h
+
+ggsave(paste0('figs/mixed_', city,'.pdf'), width = map_width, height = map_height)
+```
+
+```{r}
+f <- h_clust_map(m, tracts, data, b, j, size_coef = 1)
+f
+ggsave(paste0('figs/hclust_', city,'.pdf'), width = map_width, height = map_height)
+```
+
+```{r}
+df <- df %>% 
+    rbind(data_frame(
+        city = city, 
+        k = k, 
+        j = j,
+        hclust = cumsum(rev(b$height))[j],
+        mixed = cumsum(rev(a$height))[j]
+    ))
+```
+
+
+```{r}
+loss_curves <- loss_curves %>%
+    rbind(data_frame(
+        city = city, 
+        k = 1:length(a$height),
+        h_val = rev(b$height)[1:length(a$height)],
+        m_val = rev(a$height)
+    ))
+
+MI <- MI %>% 
+    rbind(data_frame(
+        city = city, 
+        I_XY = data %>% 
+            spread(key = group, value = n) %>% 
+            select(-tract) %>% 
+            mutual_info()
+    ))
+```
+
+<!-- # Atlanta -->
+
+<!-- ```{r} -->
+<!-- city    <- 'Atlanta' -->
+<!-- in_data <- read_data(city, all_data) -->
+<!-- data    <- in_data$data -->
+<!-- tracts  <- in_data$tracts -->
+
+<!-- b <- h_clust(tracts, data) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- g <- construct_information_graph(tracts = tracts,  -->
+<!-- 								 data = data,  -->
+<!-- 								 divergence = js_dist) -->
+
+<!-- sigma <- 30 -->
+<!-- plot_spectrum(g, sigma) -->
+<!-- ggsave(paste0('figs/spectrum_', city, '.pdf')) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- k     <- 26 -->
+<!-- g     <- spectral_cluster(g, sigma = sigma, k = k, nreps = 1000) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- input <- group_data(tracts, data, g)  -->
+<!-- blocked_tracts <- input$blocked_tracts -->
+<!-- blocked_data <- input$blocked_data -->
+
+<!-- blocked_tracts %>%  -->
+<!--     ggplot() +  -->
+<!--     geom_sf(aes(fill = as.character(cluster))) + -->
+<!--     guides(fill = FALSE) -->
+<!-- ``` -->
+
+<!-- ## Hierarchical Clustering -->
+
+<!-- ```{r} -->
+<!-- a <- h_clust(blocked_tracts, blocked_data) -->
+<!-- compare_hclusts(a, b) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- j <- 3 -->
+<!-- m <- prominence_map(tracts, data) +  -->
+<!--         guides(fill = FALSE)  -->
+
+<!-- s <- s_clust_map(m, tracts, data, blocked_tracts, size_coef = 1) -->
+<!-- s -->
+
+<!-- ggsave(paste0('figs/sclust_', city, '.pdf'), width = map_width, height = map_height) -->
+
+
+<!-- h <- h_clust_map(m, blocked_tracts, blocked_data, a, j, size_coef = 1) -->
+<!-- h -->
+<!-- ggsave(paste0('figs/mixed_', city,'.pdf'), width = map_width, height = map_height) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- f <- h_clust_map(m, tracts, data, b, j, size_coef = 1) -->
+<!-- f -->
+<!-- ggsave(paste0('figs/hclust_', city,'.pdf'), width = map_width, height = map_height) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- df <- df %>%  -->
+<!--     rbind(data_frame( -->
+<!--         city = city,  -->
+<!--         k = k,  -->
+<!--         j = j, -->
+<!--         hclust = cumsum(rev(b$height))[j], -->
+<!--         mixed = cumsum(rev(a$height))[j] -->
+<!--     )) -->
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+<!-- loss_curves <- loss_curves %>% -->
+<!--     rbind(data_frame( -->
+<!--         city = city,  -->
+<!--         k = 1:length(a$height), -->
+<!--         h_val = rev(b$height)[1:length(a$height)], -->
+<!--         m_val = rev(a$height) -->
+<!--     )) -->
+
+<!-- MI <- MI %>%  -->
+<!--     rbind(data_frame( -->
+<!--         city = city,  -->
+<!--         I_XY = data %>%  -->
+<!--             spread(key = group, value = n) %>%  -->
+<!--             select(-tract) %>%  -->
+<!--             mutual_info() -->
+<!--     )) -->
+<!-- ``` -->
+
+# Philadelphia
+
+
+```{r}
+city    <- 'Philadelphia'
+in_data <- read_data(city, all_data)
+data    <- in_data$data
+tracts  <- in_data$tracts
+```
+
+## Filter out the small island
+```{r}
+g <- construct_information_graph(tracts = tracts, 
+								 data = data, 
+								 divergence = euc)
+
+comps <- igraph::components(g)
+
+largest_cluster <- which.max(table(comps$membership))
+exclude <- which(comps$membership != largest_cluster) %>% names()
+
+tracts <- tracts %>% 
+    filter(!(GEOID %in% exclude))
+
+data <- data %>%
+    filter(tract %in% tracts$GEOID)
+```
+
+```{r}
+b <- h_clust(tracts, data)
+```
+
+```{r}
+g <- construct_information_graph(tracts = tracts, 
+								 data = data, 
+								 divergence = js_dist)
+
+sigma <- 30
+plot_spectrum(g, sigma)
+ggsave(paste0('figs/spectrum_', city, '.pdf'))
+```
+
+```{r}
+k     <- 11
+g     <- spectral_cluster(g, sigma = sigma, k = k, nreps = 1000)
+```
+
+```{r}
+input <- group_data(tracts, data, g) 
+blocked_tracts <- input$blocked_tracts
+blocked_data <- input$blocked_data
+
+blocked_tracts %>% 
+    ggplot() + 
+    geom_sf(aes(fill = as.character(cluster))) +
+    guides(fill = FALSE)
+```
+
+## Hierarchical Clustering
+
+```{r}
+a <- h_clust(blocked_tracts, blocked_data)
+compare_hclusts(a, b)
+```
+
+```{r}
+j <- 10
+m <- prominence_map(tracts, data) + 
+        guides(fill = FALSE) 
+
+s <- s_clust_map(m, tracts, data, blocked_tracts, size_coef = 1)
+s
+
+ggsave(paste0('figs/sclust_', city, '.pdf'), width = map_width, height = map_height)
+
+
+h <- h_clust_map(m, blocked_tracts, blocked_data, a, j, size_coef = 1)
+h
+ggsave(paste0('figs/mixed_', city,'.pdf'), width = map_width, height = map_height)
+```
+
+```{r}
+f <- h_clust_map(m, tracts, data, b, j, size_coef = 1)
+f
+ggsave(paste0('figs/hclust_', city,'.pdf'), width = map_width, height = map_height)
+```
+
+```{r}
+df <- df %>% 
+    rbind(data_frame(
+        city = city, 
+        k = k, 
+        j = j,
+        hclust = cumsum(rev(b$height))[j],
+        mixed = cumsum(rev(a$height))[j]
+    ))
+```
+
+
+```{r}
+loss_curves <- loss_curves %>%
+    rbind(data_frame(
+        city = city, 
+        k = 1:length(a$height),
+        h_val = rev(b$height)[1:length(a$height)],
+        m_val = rev(a$height)
+    ))
+
+MI <- MI %>% 
+    rbind(data_frame(
+        city = city, 
+        I_XY = data %>% 
+            spread(key = group, value = n) %>% 
+            select(-tract) %>% 
+            mutual_info()
+    ))
+```
+
+<!-- # Dallas -->
+
+
+
+<!-- ```{r} -->
+<!-- city    <- 'Dallas' -->
+<!-- in_data <- read_data(city, all_data) -->
+<!-- data    <- in_data$data -->
+<!-- tracts  <- in_data$tracts -->
+<!-- ``` -->
+
+<!-- ## Filter out the small island -->
+<!-- ```{r} -->
+<!-- g <- construct_information_graph(tracts = tracts,  -->
+<!-- 								 data = data,  -->
+<!-- 								 divergence = euc) -->
+
+<!-- comps <- igraph::components(g) -->
+
+<!-- largest_cluster <- which.max(table(comps$membership)) -->
+<!-- exclude <- which(comps$membership != largest_cluster) %>% names() -->
+
+<!-- tracts <- tracts %>%  -->
+<!--     filter(!(GEOID %in% exclude)) -->
+
+<!-- data <- data %>% -->
+<!--     filter(tract %in% tracts$GEOID) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- b <- h_clust(tracts, data) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- g <- construct_information_graph(tracts = tracts,  -->
+<!-- 								 data = data,  -->
+<!-- 								 divergence = js_dist) -->
+
+<!-- sigma <- 30 -->
+<!-- plot_spectrum(g, sigma) -->
+<!-- ggsave(paste0('figs/spectrum_', city, '.pdf')) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- k     <- 38 -->
+<!-- g     <- spectral_cluster(g, sigma = sigma, k = k, nreps = 1000) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- input <- group_data(tracts, data, g)  -->
+<!-- blocked_tracts <- input$blocked_tracts -->
+<!-- blocked_data <- input$blocked_data -->
+
+<!-- blocked_tracts %>%  -->
+<!--     ggplot() +  -->
+<!--     geom_sf(aes(fill = as.character(cluster))) + -->
+<!--     guides(fill = FALSE) -->
+<!-- ``` -->
+
+<!-- ## Hierarchical Clustering -->
+
+<!-- ```{r} -->
+<!-- a <- h_clust(blocked_tracts, blocked_data) -->
+<!-- compare_hclusts(a, b) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+
+<!-- j <- 10 -->
+
+<!-- m <- prominence_map(tracts, data) +  -->
+<!--         guides(fill = FALSE)  -->
+
+<!-- s <- s_clust_map(m, tracts, data, blocked_tracts, size_coef = 1) -->
+<!-- s -->
+
+<!-- ggsave(paste0('figs/sclust_', city, '.pdf'), width = map_width, height = map_height) -->
+
+
+<!-- h <- h_clust_map(m, blocked_tracts, blocked_data, a, j, size_coef = .7) -->
+<!-- h -->
+<!-- ggsave(paste0('figs/mixed_', city,'.pdf'), width = map_width, height = map_height) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- f <- h_clust_map(m, tracts, data, b, j, size_coef = .7) -->
+<!-- f -->
+<!-- ggsave(paste0('figs/hclust_', city,'.pdf'), width = map_width, height = map_height) -->
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+<!-- df <- df %>%  -->
+<!--     rbind(data_frame( -->
+<!--         city = city,  -->
+<!--         k = k,  -->
+<!--         j = j, -->
+<!--         hclust = cumsum(rev(b$height))[j], -->
+<!--         mixed = cumsum(rev(a$height))[j] -->
+<!--     )) -->
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+<!-- loss_curves <- loss_curves %>% -->
+<!--     rbind(data_frame( -->
+<!--         city = city,  -->
+<!--         k = 1:length(a$height), -->
+<!--         h_val = rev(b$height)[1:length(a$height)], -->
+<!--         m_val = rev(a$height) -->
+<!--     )) -->
+
+<!-- MI <- MI %>%  -->
+<!--     rbind(data_frame( -->
+<!--         city = city,  -->
+<!--         I_XY = data %>%  -->
+<!--             spread(key = group, value = n) %>%  -->
+<!--             select(-tract) %>%  -->
+<!--             mutual_info() -->
+<!--     )) -->
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+<!-- df %>%  -->
+<!--     write_csv('figs/clustering_vals.csv') -->
+<!-- loss_curves %>%  -->
+<!--     write_csv('figs/loss_curves.csv') -->
+<!-- MI %>%  -->
+<!--     write_csv('figs/MI.csv') -->
+
+<!-- ``` -->
+
+<!-- ```{r} -->
+
+<!-- gathered <- loss_curves %>%  -->
+<!--     gather(key = type, value = val, -city, -k) %>%  -->
+<!--     group_by(city, type) %>%  -->
+<!--     mutate(val = cumsum(val)) %>%  -->
+<!--     ungroup() -->
+
+<!-- to_show <- c('Detroit', 'Chicago', 'Philadelphia') -->
+
+<!-- MI_to_show <- MI %>%  -->
+<!--     filter(city %in% to_show) -->
+
+<!-- city <- NULL -->
+
+
+<!-- labels <- gathered %>%  -->
+<!--     filter(type == 'h_val', city %in% to_show) %>%  -->
+<!--     group_by(city) %>%  -->
+<!--     filter(val == max(val)) -->
+
+<!-- labels$val <- labels$val + c(.04, -.05, -.06) -->
+<!-- labels$k <- labels$k + c(-10, -2, 2) -->
+
+<!-- gathered %>%  -->
+<!--     filter(type == 'h_val', city %in% to_show) %>%  -->
+<!--     ggplot() +  -->
+<!--     geom_point(aes(x = k, y = val, color = city)) +  -->
+<!--     geom_line(aes(x = k, y = val, color = city, group = city)) +  -->
+<!--     geom_hline(aes(yintercept = I_XY, color = city), size = 1, data = MI_to_show, linetype = 'dashed') +  -->
+<!--     theme_bw() +  -->
+<!--     scale_color_brewer(palette = 'Accent') +  -->
+<!--     ylab(expression(italic(I(C,Y)))) +  -->
+<!--     xlab(expression(italic(k))) +  -->
+<!--     ylim(c(0,NA)) +  -->
+<!--     geom_label(aes(x = k, y = val, label = city, fill = city), data = labels) +  -->
+<!--     scale_fill_brewer(palette = 'Accent') +  -->
+<!--     guides(color = FALSE, fill = FALSE)  -->
+
+<!-- ggsave('figs/loss_curves_h.pdf', height = map_height, width = map_width) -->
+
+
+
+<!-- labels <- gathered %>%  -->
+<!--     filter(type == 'm_val', city %in% to_show) %>%  -->
+<!--     group_by(city) %>%  -->
+<!--     filter(val == max(val)) -->
+
+<!-- labels$val <- labels$val + c(.04, -.05, -.06) -->
+<!-- labels$k <- labels$k + c(-10, -2, 2) -->
+
+<!-- gathered %>%  -->
+<!--     filter(type == 'm_val', city %in% to_show) %>%  -->
+<!--      ggplot() +  -->
+<!--     geom_point(aes(x = k, y = val, color = city)) +  -->
+<!--     geom_line(aes(x = k, y = val, color = city, group = city)) +  -->
+<!--     geom_hline(aes(yintercept = I_XY, color = city), size = 1, data = MI_to_show, linetype = 'dashed') +  -->
+<!--     theme_bw() +  -->
+<!--     scale_color_brewer(palette = 'Accent') +  -->
+<!--     ylab(expression(italic(I(C,Y)))) +  -->
+<!--     xlab(expression(italic(k))) +  -->
+<!--     ylim(c(0,NA)) +  -->
+<!--     geom_label(aes(x = k, y = val, label = city, fill = city), data = labels) +  -->
+<!--     scale_fill_brewer(palette = 'Accent') +  -->
+<!--     guides(color = FALSE, fill = FALSE)  -->
+
+<!-- ggsave('figs/loss_curves_m.pdf', height = map_height, width = map_width) -->
+
+<!-- ``` -->
+
+
+

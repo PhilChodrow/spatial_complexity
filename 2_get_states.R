@@ -2,13 +2,14 @@
 library(acs, quietly = TRUE)
 library(tidyverse, quietly = TRUE)
 library(rgdal, quietly = TRUE)
+library(tigris)
+
 
 level <- 'blockgroup'
 
 # -------------------
 
 clean_race <- function(race){
-    
     
     # transform into data frame
     race <- cbind(data.frame(race@geography),

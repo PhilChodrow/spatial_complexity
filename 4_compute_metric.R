@@ -2,8 +2,7 @@ library(compx)
 library(rgdal, quietly = TRUE)
 library(stringr, quietly = TRUE)
 library(tidyverse, quietly = TRUE)
-
-source('R/smoother.R')
+library(sf)
 
 # Prep data
 
@@ -15,46 +14,61 @@ demographics <- read_csv('data/demographics.csv') %>%
 tract_list <- demographics %>% 
     group_by(tract) %>% 
     dplyr::summarise(n = sum(n)) %>% 
-    filter(n > 100) %>% 
+    filter(n > 0) %>% 
     select(-n)
 
+if(!dir.create('throughput')){
+    dir.create('throughput')
+}
 if(!dir.exists('throughput/metric')){
     dir.create('throughput/metric')
 }
 
 analysis <- function(city){
     
-    tracts <- readOGR(dsn = paste0('data/cities/',city), 
-                      layer = 'geo',
-                      verbose = FALSE)
+    tracts <- sf::st_read(dsn = paste0('data/cities/', city), 
+                          layer = 'geo', stringsAsFactors = FALSE)
+    
     print(paste(city, ':', nrow(tracts), 'tracts'))
     
+    tracts <- tracts %>% 
+        filter(GEOID %in% tract_list$tract) %>% 
+        mutate(area = st_area(geometry) / 1000^2,
+               area = as.numeric(area)) # area in km
     
-    tracts <- tracts[tracts@data$GEOID %in% tract_list$tract,] 
-    area_df <- tracts@data %>% 
-        dplyr::select(GEOID) %>% 
-        mutate(area = abs(raster::area(tracts) / 1e6))
+    area_df <- tracts %>%  
+        as_data_frame() %>% 
+        select(GEOID, area) 
     
-    data <- demographics %>% 
-        dplyr::filter(tract %in% tracts@data$GEOID)
+    data      <- demographics %>% 
+        dplyr::filter(tract %in% tracts$GEOID) 
     
-    data <- rbf_smoother(data, tracts, sigma = .5)
+    # data <- data %>% 
+    #     mutate(n = ifelse(n < 1, 1, n))
+
+    data <- compx::rbf_smoother(data, tracts, sigma = c(.3, .3)) %>%
+        arrange(tract) # expensive, dense distance matrix
     
     metric_df <- compute_metric(tracts, 
                                 data, 
                                 km = T, 
-                                sigma = 10, 
-                                divergence = 'DKL', 
-                                smooth = T) %>% 
-        left_join(area_df, by = c('geoid' = 'GEOID'))
+                                r_sigma = 10, 
+                                s_sigma = 10,
+                                smooth = T,
+                                hessian = DKL_) 
     
     metric_df <- metric_df %>% 
-        mutate(vol = map_dbl(local_g, . %>% det() %>% abs() %>% sqrt()),
-               tr  = map_dbl(local_g, . %>% diag() %>% sum())) 
+        mutate(vol = map_dbl(g, . %>% det() %>% abs() %>% sqrt()),
+               tr  = map_dbl(g, . %>% diag() %>% sum())) 
     
-
+    H_df <- data %>% 
+        group_by(tract) %>% 
+        mutate(p = n / sum(n)) %>% 
+        summarise(H = - sum(p * log(p)))
     
-    
+    metric_df <- metric_df %>% 
+        left_join(H_df, by = c('geoid' = 'tract'))
+        
     list(metric_df = metric_df, 
          tracts    = tracts) %>% 
         saveRDS(paste0('throughput/metric/', city, '.RDS'))
@@ -81,20 +95,23 @@ analysis <- function(city){
         compx::H()
     
     metric_df %>% 
-        dplyr::summarise(n_tracts = nrow(.),
-                  total_pop     = sum(total),
-                  total_area    = sum(area),
-                  total_vol     = sum(vol),
-                  trace   = mean(tr),
-                  a_vol   = weighted.mean(vol, area, na.rm = T),
-                  p_vol   = weighted.mean(vol, total, na.rm = T),
-                  a_trace = weighted.mean(tr, area, na.rm = T),
-                  p_trace = weighted.mean(tr, total, na.rm = T)) %>% 
-        mutate(I_XY = mutual_info,
+        left_join(area_df, by = c('geoid' = 'GEOID')) %>% 
+        dplyr::summarise(n_tracts   = nrow(.),
+                         total_pop  = sum(total),
+                         total_area = sum(area),
+                         total_vol  = sum(vol),
+                         trace      = mean(tr),
+                         trim_trace = mean(tr, trim = .01),
+                         trim_vol   = mean(vol, trim = .01),
+                         a_vol      = weighted.mean(vol, area, na.rm = T),
+                         p_vol      = weighted.mean(vol, total, na.rm = T),
+                         a_trace    = weighted.mean(tr, area, na.rm = T),
+                         p_trace    = weighted.mean(tr, total, na.rm = T),
+                         vol        = mean(vol)) %>% 
+        mutate(smoothed_I_XY = mutual_info,
                H = global_entropy, 
                local_H = local_entropy, 
                city = city)
-    
 }
 
 list.dirs('data/cities', full.names = FALSE)[-1] %>% 
