@@ -1,0 +1,878 @@
+---
+title: "Figures for The Spatial Structure of Segregation"
+author: "Phil Chodrow"
+date: "1/22/2017"
+output: 
+  html_document:
+    theme: sandstone
+    toc: true
+    toc_float: true
+    code_folding: hide
+---
+
+# Introduction
+
+The purpose of this document is to generate and lightly explain the figures used in "The Spatial Structure of Segregation." For more complete documentation, please see the technical report. 
+
+# Setup
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.height = 4, fig.width = 6)
+```
+
+
+```{r}
+library(magrittr)
+library(tidyverse)
+library(rgeos)
+library(maptools)
+library(scales)
+library(ggthemes)
+library(ggrepel)
+library(igraph)
+library(compx)
+library(RColorBrewer)
+library(gplots)
+library(viridis)
+library(ggmap)
+library(sf)
+library(stringr)
+```
+
+```{r}
+if(!dir.exists('figs')){
+    dir.create('figs')
+}
+
+cities <- c('Philadelphia', 
+            'Detroit', 
+            'Atlanta', 
+            'Chicago', 
+            'New York City', 
+            'Los Angeles', 
+            'Seattle', 
+            'San Francisco', 
+            'New Orleans')
+```
+
+
+
+
+# Metric Structure
+
+```{r}
+
+metric_map <- function(city){
+
+    input    <- readRDS(paste0('throughput/metric/', city, '.RDS'))
+    
+    metric_df <- input$metric_df 
+    
+    input$tracts %>% 
+        left_join(metric_df, by = c('GEOID' = 'geoid')) %>% 
+        ggplot() + 
+        geom_sf(aes(fill = tr/(4 * pi)), size = 0) + 
+        scale_fill_viridis(option = 'magma' , 
+                           trans = 'log10',
+                           limits = c(.005, .7),
+                           oob = squish) +
+        ggthemes::theme_map() + 
+        theme(legend.justification = c(0,0), 
+              legend.position      = c(.8,.02),
+              # panel.background = element_rect(fill = 'grey80', color = NA),
+              legend.background = element_rect(fill = NA)) + 
+        guides(fill = guide_colorbar(ticks = T, title = expression(atop(italic(j(x)),(nats/km^2)))))
+        # guides(fill = guide_colorbar(ticks = F, title = expression(sqrt(group("|" , det~italic(g[x]), "|")))))
+    
+}
+```
+
+
+And now we plot. 
+
+```{r}
+map_width  <- 4
+map_height <- 3
+```
+
+```{r}
+city <- 'Detroit'
+metric_map(city) + theme(legend.text=element_text(size=10), legend.title = element_text(size=10))
+paste0('figs/spatial_trace_', city, '.pdf') %>% ggsave(width = map_width, height = map_height)
+```
+
+```{r}
+city <- 'Atlanta'
+metric_map(city) + guides(fill = FALSE) + theme(legend.text=element_text(size=10))
+paste0('figs/spatial_trace_', city, '.pdf') %>% ggsave(width = map_width, height = map_height)
+```
+
+```{r}
+city <- 'Chicago'
+metric_map(city) + guides(fill = FALSE) + theme(legend.text=element_text(size=10))
+paste0('figs/spatial_trace_', city, '.pdf') %>% ggsave(width = map_width, height = map_height)
+```
+
+```{r}
+city <- 'Philadelphia'
+metric_map(city) + theme(legend.text=element_text(size=10), legend.title = element_text(size=10)) + guides(fill = FALSE)
+paste0('figs/spatial_trace_', city, '.pdf') %>% ggsave(width = map_width, height = map_height)
+```
+
+```{r}
+city <- 'Dallas'
+metric_map(city) + theme(legend.text=element_text(size=10), legend.title = element_text(size=10))
+paste0('figs/spatial_trace_', city, '.pdf') %>% ggsave(width = map_width, height = map_height)
+```
+
+## Comparative Information Density
+
+```{r}
+scatterplot_theme <- function(){
+     layout <- theme_bw() %+replace%
+         theme(axis.ticks.y = element_line(size = 0, color = 'black'),
+          axis.ticks.x = element_line(size = .2, color = 'black'),
+          axis.ticks.length=unit(-0.25, "cm"), 
+          axis.text.x = element_text(size = 11, margin=unit(c(0.5,0.5,0.5,0.5), "cm")), 
+          axis.text.y = element_text(size = 11, margin=unit(c(0.5,0.5,0.1,0.5), "cm")),
+          axis.title.y = element_text(margin=unit(c(0.1,-0.5,0.1,0.1), "cm"), angle = 90),
+          axis.title.x = element_text(margin=unit(c(0,0,-0.1,-1), "cm"))) 
+    
+    list(layout)
+}
+```
+
+
+
+```{r}
+
+demographics <- read_csv('data/demographics.csv') %>% 
+        dplyr::mutate(tract = as.character(GEOID),
+               tract = stringr::str_pad(tract, 12, side = 'left', pad = '0')) %>% 
+        select(-GEOID) 
+    
+
+```
+
+```{r}
+assumptions <- read_csv('assumptions/cities.csv')
+
+code_lookup <- tigris::fips_codes %>% 
+    select(state, state_code) %>% 
+    distinct(state, state_code, keepall = TRUE)
+
+assumptions <- assumptions %>% 
+    left_join(code_lookup, by = c('state' = 'state')) %>% 
+    mutate(county = stringr::str_pad(county, width = 3, side = 'left', pad = '0'))
+
+dem <- demographics %>% 
+    mutate(state = stringr::str_sub(tract, start = 1, end = 2), 
+           county = stringr::str_sub(tract, start = 3, end = 5)) %>% 
+    left_join(assumptions, by = c('state' = 'state_code', 'county' = 'county')) 
+```
+
+
+```{r}
+MIs <- dem %>% 
+    filter(!is.na(name)) %>% 
+    select(-state, -county, -state.y) %>% 
+    tidyr::spread(key = group, value = n, fill = 0) %>% 
+    select(-tract) %>% 
+    nest(-name) %>% 
+    mutate(I_XY = map_dbl(data, mutual_info)) %>% 
+    select(-data)
+
+```
+
+
+```{r}
+
+summary <- read_csv('throughput/metric.csv') %>% 
+    left_join(MIs, by = c('city' = 'name'))
+
+highlight <- summary %>%
+    filter(city %in% cities)
+
+```
+
+
+```{r}
+summary %>% 
+    write_csv('figs/metric_summary.csv')
+```
+
+
+
+Unevenness profile: 
+
+```{r}
+highlight <- summary %>% 
+    filter(city %in% cities) 
+
+ summary %>% 
+    ggplot() + 
+    aes(x = I_XY , y = trim_trace / (4 * pi) ) + 
+    scale_x_continuous(limits = c(0, NA)) + 
+    scale_y_continuous(limits = c(0, NA)) + 
+    geom_point(color = 'firebrick') + 
+    # geom_point(color = 'firebrick', data = highlight) + 
+    # geom_text_repel(aes(label = city), data = highlight) +
+    geom_text_repel(aes(label = city), size = 3, segment.size = .3) +
+    scatterplot_theme() + 
+    xlab(expression(italic(I[f](X,Y))~(nats))) + 
+    ylab(expression(italic(J(X,Y))~(nats/km^2))) + 
+    annotation_logticks(scaled = TRUE, size = .2, sides = 'l')
+
+ ggsave('figs/unevenness_density.pdf', width = 7, height = 5)
+ 
+```
+
+```{r}
+
+cities <- list.files(path = 'throughput/metric/') %>% 
+    map(str_sub, end = -5) 
+
+metric_df <- list.files(path = 'throughput/metric/', full.names = TRUE) %>% 
+    map(readRDS) %>% 
+    map('metric_df') %>% 
+    map2(cities, ~mutate(.x, city = .y)) %>% 
+    reduce(rbind)
+
+metric_df %>% 
+    mutate(norm_tr = tr / H) %>% 
+    group_by(city) %>% 
+    summarise(trim_trace = mean(norm_tr, trim = .01, na.rm = T)) %>% 
+    left_join(summary, by = c('city' = 'city')) %>% 
+    ggplot() + 
+    aes(x = I_XY , y = trim_trace.x / (4 * pi)) + 
+    scale_x_continuous(limits = c(0, NA)) + 
+    scale_y_continuous(limits = c(0, .15)) + 
+    geom_point(color = 'firebrick') + 
+    geom_text_repel(aes(label = city), size = 3, segment.size = .3) +
+    scatterplot_theme() + 
+    xlab(expression(italic(I(X,Y))~(nats))) + 
+    ylab(expression(italic(J(X,Y))~(nats/km^2))) + 
+    annotation_logticks(scaled = TRUE, size = .2, sides = 'l')
+
+
+ggsave('figs/unevenness_normalized_density.pdf', width = 7, height = 5)
+
+```
+
+```{r}
+highlight <- summary %>% 
+    filter(city %in% cities) 
+
+ summary %>% 
+    ggplot() + 
+    aes(x = I_XY , y = trim_trace * n_tracts / total_pop ) + 
+    # scale_y_continuous(trans = 'log10') +
+    geom_point(color = 'grey') + 
+    geom_point(color = 'firebrick', data = highlight) + 
+    geom_text_repel(aes(label = city), data = highlight) +
+    scatterplot_theme() + 
+    xlab(expression(italic(I[f](X,Y)))) + 
+    ylab(expression(italic(J(X,Y)))) + 
+    annotation_logticks(scaled = TRUE, size = .2, sides = 'l')
+
+ ggsave('figs/unevenness_density_pop.pdf')
+ 
+```
+
+# Network Structure
+
+## Spectra
+```{r}
+spectra <- read_csv('throughput/spectra.csv')
+
+highlight <- spectra %>% 
+    filter(city %in% cities)
+```
+
+```{r}
+
+spectra_theme <- function(){
+    
+    layout <- theme_bw() %+replace%
+    theme(axis.ticks.y = element_line(size = .2, color = 'black'),
+          axis.ticks.x = element_line(size = .2, color = 'black'),
+          axis.ticks.length=unit(-0.25, "cm"),
+          axis.text.x = element_text(size = 11, margin=unit(c(0.5,0.5,0.5,0.5), "cm")), 
+          axis.text.y = element_text(size = 11, margin=unit(c(0.5,0.5,0.1,0.0), "cm")),
+          axis.title.y = element_text(angle = 90),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank()
+          ) 
+    
+    list(layout, 
+         scale_color_brewer(palette = 'Dark2'),
+         guides(color = guide_legend(title = element_blank())))
+    # scale_color_brewer(palette = 'Set1') %+replace% 
+    # guides(color = guide_legend(title = element_blank())) 
+}
+
+```
+
+
+
+```{r}
+
+spectra %>% 
+    ggplot() + 
+    aes(x = n, y = 1-eig, group = city) + 
+    geom_line(color = 'grey', alpha = 1, size = .3) + 
+    scale_y_continuous(trans = 'log10', limit = c(5e-1, NA), expand=c(0,0)) + 
+    scale_x_continuous(limit = c(0, 50), expand=c(0,0)) + 
+    geom_line(aes(color = city),  data = highlight, size = 1) + 
+    geom_point(data = highlight, size = .1, color = 'black') + 
+    ylab(expression(1-lambda[italic(n)])) + 
+    xlab(expression(italic(n))) + 
+    annotation_logticks(scaled = T, sides = 'l', size = .2) +
+    spectra_theme() + 
+    theme(axis.ticks.y = element_line(size = 0, color = 'black'))
+    
+ggsave('figs/spectra.pdf')
+
+```
+
+## Differenced Spectra
+```{r}
+
+area_df <- summary %>% 
+    select(city, total_area, total_pop)
+
+
+normed_spectra <- spectra %>% 
+    mutate(diff = abs(lead(eig)) / abs(eig) - 1) %>% 
+    group_by(city) %>% 
+    filter(!is.infinite(diff)) %>%
+    mutate(diff = diff / max(diff, na.rm = T)) %>%
+    filter(diff > 0, diff < 10)
+
+highlight <- normed_spectra %>%
+    filter(city %in% cities)
+
+normed_spectra %>% 
+    ggplot() + 
+    aes(x = n, y = diff, group = city) + 
+    geom_line(alpha = .5, color = 'grey') +
+    geom_line(aes(color = city), data = highlight, size = .7) + 
+    geom_point(data = highlight, size = .5, color = 'black') +
+    scale_x_continuous(limits = c(2, 30)) +
+    scale_y_continuous(trans = 'log10', limits = c(1e-8, NA)) +
+    ylab(expression(lambda[italic(n+1)] /lambda[italic(n)])) +
+    xlab(expression(italic(n))) + 
+    spectra_theme()
+
+ggsave('figs/spectra_differenced.pdf')
+
+```
+
+
+```{r}
+area_df <- summary %>% 
+    select(city, total_area, total_pop)
+
+
+normed_spectra <- spectra %>% 
+    mutate(diff = lead(eig) - (eig)) %>% 
+    group_by(city) %>% 
+    filter(!is.infinite(diff)) %>%
+    mutate(diff = diff / max(diff, na.rm = T)) %>%
+    filter(diff > 0, diff < 10)
+
+highlight <- normed_spectra %>%
+    filter(city %in% cities)
+
+normed_spectra %>% 
+    ggplot() + 
+    aes(x = n, y = diff, group = city) + 
+    geom_line(alpha = .5, color = 'grey') +
+    geom_line(aes(color = city), data = highlight, size = .7) + 
+    geom_point(data = highlight, size = .5, color = 'black') +
+    scale_x_continuous(limits = c(2, 30)) +
+    scale_y_continuous(trans = 'log10', limits = c(1e-8, NA)) +
+    ylab(expression(lambda[italic(n+1)] /lambda[italic(n)])) +
+    xlab(expression(italic(n))) + 
+    spectra_theme()
+
+```
+
+What happens when we incorporate area?
+
+```{r}
+
+spectra <- spectra %>% 
+    left_join(area_df) %>%
+    mutate(scale = total_pop / n )
+
+normed_spectra <- spectra %>% 
+    mutate(diff = lead(eig) - eig) %>% 
+    group_by(city) %>% 
+    mutate(diff = diff * max(n)) %>% 
+    filter(n < .03 * max(n))
+
+highlight <- normed_spectra %>%
+    filter(city %in% cities)
+
+normed_spectra %>% 
+    ggplot() + 
+    aes(x = scale, y = diff, group = city) + 
+    geom_hline(yintercept = 1) + 
+    geom_line(alpha = .3, color = 'grey') +
+    geom_line(aes(color = city), data = highlight) + 
+    # geom_point(data = highlight, size = .1, color = 'black') +
+    scale_x_continuous(limits = c(NA, NA), trans = 'log10') +
+    scale_y_continuous( trans = 'log10') +
+    ylab(expression(italic(N)~(lambda[italic(n+1)] - lambda[italic(n)]))) +
+    xlab(expression(Characteristic~Population:~italic(p==frac(P,n)))) +  
+    spectra_theme() 
+
+ggsave('figs/spectra_pop.pdf')
+
+```
+
+```{r}
+
+spectra <- spectra %>% 
+    mutate(scale = sqrt(total_area / n * pi))
+
+normed_spectra <- spectra %>% 
+    mutate(diff = lead(eig) - eig) %>% 
+    group_by(city) %>% 
+    mutate(diff = diff * max(n)) %>% 
+    filter(n < .03 * max(n))
+
+highlight <- normed_spectra %>%
+    filter(city %in% cities)
+
+normed_spectra %>% 
+    ggplot() + 
+    aes(x = scale, y = diff, group = city) + 
+    geom_hline(yintercept = 1) + 
+    geom_line(alpha = .3, color = 'grey') +
+    geom_line(aes(color = city), data = highlight) + 
+    # geom_point(data = highlight, size = .1, color = 'black') +
+    scale_x_continuous(limits = c(NA, NA), trans = 'log10') +
+    scale_y_continuous( trans = 'log10') +
+    ylab(expression(italic(N)~(lambda[italic(n+1)] - lambda[italic(n)]))) +
+    xlab(expression(Characteristic~Length~(km):~italic(L)==sqrt(frac(italic(A), italic(n)*pi)))) + 
+    spectra_theme() 
+
+ggsave('figs/spectra_geo.pdf')
+
+```
+
+```{r}
+normed_spectra %>% 
+    group_by(city) %>% 
+    mutate(n_tracts = max(n)) %>% 
+    filter(diff > 1, n < .9 * max(n)) %>% 
+    summarise(max_n = max(n),
+              n_tracts = max(n_tracts)) %>% 
+    mutate(max_n = max_n / n_tracts) %>% 
+    left_join(summary, by = c('city' = 'city')) %>%
+    ggplot() + 
+    aes(x = total_vol/total_area, y = max_n) + 
+    geom_point() + 
+    geom_text_repel(aes(label = city)) + 
+    scale_x_continuous(trans = 'log10') 
+    # scale_y_continuous(trans = 'log10') 
+```
+
+# Hierarchical Clustering
+
+```{r}
+loss_curves <- read_csv('throughput/hclust_loss.csv') %>% 
+    left_join(summary, by = c('city' = 'city'))
+
+loss_curves <- loss_curves %>% 
+    group_by(city) %>% 
+    mutate(value = info - lag(info)) 
+
+highlight <- loss_curves %>% 
+    filter(city %in% cities)
+
+loss_curves %>% 
+    ggplot() + 
+    aes(x = n, y = info, group = city) + 
+    geom_line(color = 'grey') + 
+    geom_line(aes(color = city), data = highlight) + 
+    scale_x_continuous(limits = c(1, NA), trans = 'log10') +
+    spectra_theme()
+```
+
+```{r}
+
+cities_h <- c('Atlanta', 'Chicago', 'Detroit', 'Milwaukee')
+
+loss_curves <- loss_curves %>% 
+    group_by(city) %>% 
+    mutate(value = info - lag(info)) 
+
+highlight <- loss_curves %>% 
+    filter(city %in% cities_h)
+
+loss_curves %>% 
+    ggplot() + 
+    aes(x = n, y = value, group = city) + 
+    geom_line(color = 'grey', alpha = .5) +
+    geom_line(aes(color = city), data = highlight) + 
+    geom_point(aes(color = city), data = highlight) + 
+    scale_x_continuous(limits = c(2, 12), breaks = 2*(1:8)) + 
+    scale_y_continuous(limits = c(0, NA), expand = c(0,.01)) + 
+    spectra_theme() + 
+    ylab(expression(italic(I(C[k],Y) - I(C[k-1],Y)))) + 
+    xlab(expression(italic(k))) + 
+    theme(legend.position = 'bottom',
+          axis.ticks.length=unit(-0.1, "cm"))
+
+ggsave('figs/hclust_differenced_loss_curves.pdf')
+```
+
+```{r}
+loss_curves <- loss_curves %>% 
+    mutate(length_scale = sqrt(total_area / (pi * n))) 
+
+highlight <- loss_curves %>% 
+    filter(city %in% cities)
+point_highlight <- highlight %>% 
+    filter(length_scale > 2)
+
+loss_curves %>% 
+    ggplot() + 
+    aes(x = length_scale, y = value, group = city) + 
+    geom_line(color = 'grey', alpha = .3) + 
+    geom_line(aes(color = city), data = highlight) + 
+    geom_point(data = point_highlight, size = .2) + 
+    scale_x_continuous(limits = c(0, 20)) +
+    scale_y_continuous(limits = c(0, NA)) + 
+    spectra_theme()
+
+ggsave('figs/hclust_geo_scale_differenced.pdf')
+
+```
+
+```{r}
+loss_curves %>% 
+    group_by(city) %>% 
+    filter(info / max(info) > .5) %>% 
+    filter(max(info) > .3) %>%
+    filter(n == min(n)) %>% 
+    ggplot() + 
+    aes(y = n, x = trim_trace) + 
+    geom_smooth(se = F) + 
+    geom_text_repel(aes(label = city)) + 
+    geom_point()
+```
+
+# AOC calc? 
+
+```{r}
+reg_df <- spectra %>% 
+    group_by(city) %>% 
+    filter(eig != 0, eig <= .9999) %>% 
+    # filter(n > 800) %>% 
+    summarise(log_det = mean((-log(eig)))) %>% 
+    left_join(summary)
+# %>% 
+#     filter(I_XY > .2)
+reg_df %>% 
+    ggplot() + 
+    aes(x = log_det, y = trim_trace) + 
+    geom_point() + 
+    geom_text_repel(aes(label = city)) + 
+    scatterplot_theme()
+```
+
+```{r}
+reg_df %>% 
+    lm(log_det ~ trim_trace + I_XY,  data = .) %>% 
+    summary()
+```
+
+
+```{r}
+reg_df <- loss_curves %>% 
+    filter(info - lag(info) > .01 | n > 10) %>%
+    mutate(n = row_number()) %>% 
+    # filter(row_number() < 10) %>% 
+    summarise(
+              trim_trace = mean(trim_trace),
+              I_XY = mean(I_XY),
+              AOC = 1 / (max(info) * log(max(n_tracts))) * sum(info * log((n + 1) / n)),
+              H = mean(H)) 
+
+reg_df %>% 
+    ggplot() + 
+    aes(x = trim_trace, y = AOC) +
+    geom_point() + 
+    geom_text_repel(aes(label = city)) + 
+    geom_smooth() + 
+    scatterplot_theme()
+```
+
+```{r}
+reg_df %>% 
+    lm(AOC ~ trim_trace + I_XY, data = .) %>%
+    summary()
+```
+
+
+```{r}
+loss_curves <- loss_curves %>% 
+    mutate(length_scale = sqrt(total_area / (pi * n)),
+           diff_value   = (info - lag(info)) / (log(n) - log(lag(n)))) %>% 
+    group_by(city) %>% 
+    mutate(baseline = max(info) / log(n()),
+           to_plot = diff_value - baseline) %>% 
+    filter(length_scale > 0)
+
+highlight <- loss_curves %>% 
+    filter(city %in% cities)
+point_highlight <- highlight %>% 
+    filter(length_scale > 2)
+
+loss_curves %>% 
+    ggplot() + 
+    aes(x = length_scale, y = value, group = city) + 
+    geom_hline(yintercept = 0) + 
+    geom_line(color = 'grey', alpha = .3) + 
+    geom_line(aes(color = city), data = highlight) + 
+    # geom_point(data = point_highlight, size = .2) + 
+    scale_x_continuous(limits = c(1, 100), trans = 'log10') +
+    spectra_theme()
+
+ggsave('figs/hclust_geo_scale_differenced.pdf')
+
+```
+
+
+```{r}
+loss_curves <- loss_curves %>% 
+    dplyr::group_by(city) %>% 
+    dplyr::mutate(rev_info = max(info) - info)
+
+highlight <- loss_curves %>% 
+    dplyr::filter(city %in% cities)
+
+loss_curves %>% 
+    ggplot() + 
+    aes(x = length_scale, y = rev_info, group = city) + 
+    geom_line(color = 'grey', alpha = .3) + 
+    geom_line(aes(color = city), data = highlight) + 
+    # geom_point(data = point_highlight, size = .2) + 
+    scale_x_continuous(limits = c(NA, 100), trans = 'log10') +
+    spectra_theme() + 
+    ylab(expression(italic(I(C[n],Y)))) +
+    xlab(expression(Characteristic~Length~(km):~italic(L)==sqrt(frac(italic(A), italic(n)*pi))))
+    
+
+ggsave('figs/hclust_geo_scale_cumulative.pdf')
+
+
+```
+
+```{r}
+loss_curves <- loss_curves %>% 
+    dplyr::mutate(pop_scale = total_pop / n)
+highlight <- loss_curves %>% 
+    dplyr::filter(city %in% cities)
+loss_curves  %>% 
+    ggplot() + 
+    aes(x = pop_scale, y = rev_info, group = city) + 
+    geom_line(color = 'grey', alpha = .3) + 
+    geom_line(aes(color = city), data = highlight) + 
+    scale_x_continuous(limits = c(1e3, 6e6), trans = 'log10') +
+    spectra_theme() + 
+    ylab(expression(italic(I(C[n],Y)))) +
+    xlab(expression(Characteristic~Population:~italic(p==frac(P,n))))
+```
+
+# Gathered Loss Curves
+
+```{r}
+
+gathered_spectra <- spectra%>% 
+    select(-scale) %>% 
+    left_join(area_df) %>%
+    mutate(length_scale = sqrt(total_area / (pi * n)),
+           pop_scale    = total_pop / n) %>% 
+    group_by(city) %>% 
+    mutate(diff = log(max(n) * (lead(eig) - eig))) %>% 
+    ungroup() %>% 
+    gather(key = type, value = scale, length_scale, pop_scale) %>% 
+    group_by(city) %>% 
+    filter(n < .3 * max(n)) %>% 
+    mutate(measure_type = 'spectra')
+    
+highlight <- gathered_spectra %>% 
+    filter(city %in% cities)
+
+gathered_spectra %>% 
+    ggplot() + 
+    aes(x = scale, y = diff, group = city) + 
+    geom_line(color = 'grey', alpha = .3) + 
+    geom_line(aes(color = city), data = highlight) + 
+    facet_wrap(~type, scales = 'free_x') + 
+    scale_x_continuous(trans = 'log10') +
+    # scale_y_continuous(trans = 'log10') +
+    spectra_theme()
+
+```
+
+
+```{r}
+
+gathered_hclust <- loss_curves %>% 
+    mutate(length_scale = sqrt(total_area / (pi * n)),
+           pop_scale = total_pop / n) %>% 
+    group_by(city) %>% 
+    mutate(baseline = max(info) / log10(max(n)),
+           info =(info - lag(info))/(log10(n) - log10(lag(n))) - baseline,
+           info = info
+           ) %>% 
+    gather(key = type, value = scale, length_scale, pop_scale) %>% 
+    mutate(measure_type = 'hierarchical') %>%
+    filter(n < .3 * max(n)) 
+
+highlight <- gathered_hclust %>% 
+    filter(city %in% cities) 
+
+gathered_hclust %>% 
+    ggplot() + 
+    aes(x = scale, y = info, group = city) + 
+    geom_hline(yintercept = 1) + 
+    geom_line(color = 'grey', alpha = .3) + 
+    geom_line(aes(color = city), data = highlight) + 
+    facet_wrap(~type, scales = 'free_x') + 
+    scale_x_continuous(trans = 'log10') +
+    # scale_y_continuous(trans = 'log10') +
+    spectra_theme()
+```
+
+```{r, fig.height = 5}
+
+g_spectra <- gathered_spectra %>% 
+    select(city, scale, type, loss = diff, measure_type)
+
+g_hclust <- gathered_hclust %>% 
+    select(city, scale, type, loss = info, measure_type)
+
+gathered <- rbind(g_hclust, g_spectra) 
+
+gathered <- gathered %>% 
+    mutate(y = 0)
+
+gathered <- gathered %>% 
+    mutate(measure_type = ifelse(measure_type == 'hierarchical', 'Hierarchical', 'Spectral'),
+           type = ifelse(type == 'length_scale', 'Length~Scale', 'Population~Scale'))
+
+highlight <- gathered %>% 
+    filter(city %in% cities)
+
+```
+
+```{r, fig.height = 6}
+
+
+gathered %>% 
+    ggplot() + 
+    aes(x = scale, y = loss, group = city) + 
+    geom_hline(aes(yintercept = y), size = .5) + 
+    geom_line(color = 'grey', alpha = 1, size = .2) + 
+    geom_line(aes(color = city), data = highlight) + 
+    facet_grid(measure_type~type, 
+               scales = 'free',
+               labeller = label_parsed) + 
+    scale_x_continuous(trans = 'log10') +
+    spectra_theme() + 
+    theme(legend.text=element_text(size=12),
+          legend.position="bottom",
+          strip.background = element_blank(),
+          strip.text = element_text(size = 12)) + 
+    xlab(expression(italic(S(k)))) + 
+    ylab(expression(italic(Q(k))))
+
+ggsave('figs/all_loss_curves.pdf')
+
+```
+
+## Clustering
+
+First we'll do ths clustering. 
+```{r, fig.height = 6, fig.width = 10}
+city <- 'Detroit'
+g <- readRDS(paste0('throughput/graphs/',city,'.RDS'))
+sigma <- 2
+
+pal   <- brewer.pal(9, name = "Set1") %>%
+	colorRampPalette()
+
+```
+
+## Geodesics and Space Distortion
+
+```{r}
+city <- 'Detroit'
+input <- readRDS(paste0('throughput/metric/', city, '.RDS'))
+tracts <- input$tracts
+
+k <- 600
+center <- V(g)[[k]]$name
+center_coords <- data_frame(x = V(g)[[k]]$x, y = V(g)[[k]]$y)
+
+dists <- g %>% igraph::distances(weights = E(g)$dist)
+
+dist_lookup <- dists[,center] %>% 
+    as.data.frame() %>% 
+    rownames_to_column(var = 'geoid') 
+
+names(dist_lookup) <- c('geoid', 'dist')
+
+tracts %>% 
+    left_join(dist_lookup, by = c('GEOID' = 'geoid')) %>%
+    ggplot() + 
+    geom_sf(aes(fill = dist), size = .1) +
+    scale_fill_viridis(option = 'magma' ,
+                                oob = squish) +
+    theme_map() + 
+    theme(legend.justification = c(0,0), 
+          legend.position      = c(.8,.1),
+          # panel.background = element_rect(fill = 'grey80', color = NA),
+          legend.background = element_rect(fill = NA)) + 
+    guides(fill = guide_colorbar(ticks = F, title = expression(d[gamma]))) +
+    geom_point(aes(x,y), data = center_coords, color = 'white')
+    
+ggsave('figs/geo_distance.pdf')
+```
+
+## Bare network structure
+
+Visualization of network structure in Detroit. The weight of each line segment is proportional to the affinity between the tracts it connects. 
+```{r}
+edges <- g %>% as_long_data_frame() %>% tbl_df()
+nodes <- data_frame(x = V(g)$x, y = V(g)$y)
+
+ggplot() + 
+    geom_sf(fill = 'grey10', alpha = .7, data = tracts) +
+    geom_segment(aes(x = from_x, y = from_y, xend = to_x, yend = to_y, size = exp(-50 * dist^2), alpha = exp(-50 * dist^2)), color = 'white', data = edges) +
+    theme_map() +
+    scale_size_continuous(range = c(0,2)) + 
+    guides(alpha = 'none', color = 'none', size = 'none') 
+# +
+#     theme(panel.background = element_rect(fill = 'grey80', color = NA))
+
+ggsave('figs/network_structure.pdf')
+
+```
+
+
+
+
+
+# Session Info
+```{r}
+sessionInfo()
+```
+

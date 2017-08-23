@@ -1,0 +1,324 @@
+---
+title: "8_time"
+author: "phil"
+date: "7/24/2017"
+output: html_document
+---
+
+Overall goal: visualization in which we see boundaries shifting in time, and in which the importance of each boundary also changes in a way that we mark visually. 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+set.seed(1234)
+```
+
+```{r}
+
+library(compx)        # main analysis functions
+library(tidyverse)    # for data manipulation and viz
+library(igraph)       # for network analysis
+library(RColorBrewer) # for plots
+library(ggthemes)     # for theme_map
+library(units)        # needed for sf
+library(sf)           # needed for io and visualization in this vignette
+library(scales)       # for ggplot2 viz
+library(RSpectra)     # fast eigenvalues, also used within compx
+library(tidygraph)
+source('R/utils.R')
+```
+
+
+```{r}
+
+tracts_to_use <- detroit_race %>% 
+	group_by(tract, t) %>%
+	summarise(n = sum(n)) %>%
+	filter(n > 100) 
+
+tracts <- detroit_tracts %>% 
+	filter(GEOID %in% tracts_to_use$tract)
+
+```
+
+```{r}
+js_dist <- function(n,m){
+	
+	N <- sum(n)
+	M <- sum(m)
+	
+	p <- n/N
+	q <- m/M
+	
+	sqrt((N/(M+N))*DKL(p, p+q) + (M/(M+N))*DKL(q, p+q))
+}
+
+```
+
+# Changing Boundaries
+
+```{r}
+
+race_temporal <- detroit_race %>%
+	filter(t %in% c(1990, 2000, 2010))          
+
+g <- construct_information_graph(tracts, race_temporal, divergence = js_dist)
+
+```
+
+```{r}
+k     <- 7
+sigma <- 100
+g     <- g %>% spectral_cluster(sigma = sigma, k = k, nreps = 1000)
+```
+
+```{r}
+
+nodes    <- data_frame(geoid = V(g)$geoid, t = V(g)$t, cluster = V(g)$cluster) 
+	
+pal <- scales::brewer_pal(palette = 'Set2')
+pal <- colorRampPalette(pal(k))
+pal <- pal(k)
+
+tracts %>% 
+	left_join(nodes, by = c('GEOID' = 'geoid')) %>% 
+	ggplot() + 
+	geom_sf(aes(fill = as.character(cluster)), size = .1) +
+	ggthemes::theme_map() + 
+	scale_fill_manual(values = pal) + 
+	theme(legend.position = 'bottom',
+		  legend.justification = c(.5, .0),
+		  plot.margin=unit(c(0,0,0,0),"mm")) + 
+	guides(fill = guide_legend(title = 'Cluster', nrow = 1)) + 
+	facet_wrap(~t)
+```
+
+
+
+```{r}
+clusters <- data_frame(GEOID = V(g)$geoid, t = V(g)$t, cluster = V(g)$cluster)    
+
+blocked_tracts <- tracts %>% 
+    left_join(clusters) %>% 
+    select(cluster, t) %>% 
+    aggregate(by = list(cluster = .$cluster, t = .$t), FUN = identity) %>% 
+    mutate(GEOID = as.character(cluster))
+
+blocked_data <- race_temporal %>% 
+    left_join(clusters, by = c('tract' = 'GEOID', 't' = 't')) %>% 
+    group_by(cluster, group, t) %>% 
+    summarise(n = sum(n)) %>% 
+    ungroup() %>% 
+    mutate(tract = as.character(cluster))
+```
+
+```{r}
+h <- construct_information_graph(blocked_tracts, blocked_data, js_dist)
+a <- h_clust(h)
+```
+
+```{r}
+get_MI <- function(k, the_year){
+    v <- a %>% cutree(k)
+
+    cluster_df <- data_frame(small_cluster = names(v), h_cluster = as.character(v)) %>% 
+        tidyr::separate(small_cluster, into = c('cluster', 't'), sep = '_')
+    
+    cluster_lookup <- data_frame(name = V(g)$name, cluster = V(g)$cluster) %>% 
+        separate(name, into = c('geoid', 't'), sep = '_') %>% 
+        mutate(cluster = as.character(cluster)) %>% 
+        left_join(cluster_df, by = c('t' = 't', 'cluster' = 'cluster')) %>% 
+        mutate(t = as.integer(t))
+    
+    clustered_data <- race_temporal %>% 
+        left_join(cluster_lookup, by = c('tract' = 'geoid', 't' = 't'))
+    
+    clustered_data %>% 
+        filter(t == the_year) %>% 
+        select(-tract, cluster) %>% 
+        group_by(group, h_cluster) %>% 
+        summarise(n = sum(n)) %>% 
+        filter(!is.na(h_cluster)) %>% 
+        spread(key = h_cluster, value = n) %>% 
+        ungroup() %>% 
+        select(-group) %>% 
+        mutual_info()
+}
+```
+
+```{r}
+MIs <- expand.grid(t = c(1990, 2000, 2010), k = 2:7) %>% 
+    dplyr::as_data_frame() %>% 
+    mutate(MI = map2_dbl(k, t, get_MI))
+
+vals_1 <- MIs %>% 
+    group_by(t) %>% 
+    mutate(val = ifelse(k == 2, MI, MI - lag(MI))) %>% 
+    ungroup() %>% 
+    group_by(k) %>% 
+    mutate(sign = val - lag(val)) %>% 
+    ungroup()
+```
+
+```{r}
+
+v <- a %>% cutree(k)
+    
+    cluster_df <- data_frame(small_cluster = names(v), h_cluster = as.character(v)) %>% 
+        tidyr::separate(small_cluster, into = c('cluster', 't'), sep = '_')
+    
+    cluster_lookup <- data_frame(name = V(g)$name, cluster = V(g)$cluster) %>% 
+        separate(name, into = c('geoid', 't'), sep = '_') %>% 
+        mutate(cluster = as.character(cluster)) %>% 
+        left_join(cluster_df, by = c('t' = 't', 'cluster' = 'cluster')) %>% 
+        mutate(t = as.integer(t))
+    
+    clustered_data <- race_temporal %>% 
+        left_join(cluster_lookup, by = c('tract' = 'geoid', 't' = 't'))
+
+```
+
+```{r}
+
+boundaries_map <- function(the_year){
+
+all <- tracts %>% 
+        aggregate(by = list(rep(1, nrow(.))), FUN = identity) 
+    
+all_bd <- st_boundary(all)
+    
+m <- detroit_race %>% 
+    filter(t == the_year) %>% 
+    prominence_map(tracts, .)
+
+val <- vals_1 %>% 
+    filter(t == the_year)
+
+for(j in rev(2:k)){
+        
+    v <- a %>% cutree(j)
+    
+    cluster_df <- data_frame(small_cluster = names(v), h_cluster = as.character(v)) %>% 
+        tidyr::separate(small_cluster, into = c('cluster', 't'), sep = '_')
+    
+    cluster_lookup <- data_frame(name = V(g)$name, cluster = V(g)$cluster) %>% 
+        separate(name, into = c('geoid', 't'), sep = '_') %>% 
+        mutate(cluster = as.character(cluster)) %>% 
+        left_join(cluster_df, by = c('t' = 't', 'cluster' = 'cluster')) %>% 
+        mutate(t = as.integer(t))
+    
+    clustered_data <- race_temporal %>% 
+        left_join(cluster_lookup, by = c('tract' = 'geoid', 't' = 't'))
+    
+    plot_tracts <- tracts %>% 
+        left_join(cluster_lookup, by = c('GEOID' = 'geoid')) %>% 
+        aggregate(by = list(cluster = .$h_cluster, t = .$t), FUN = identity) %>% 
+        filter(t == the_year)
+        
+        bd <- st_boundary(plot_tracts) %>% st_difference(all_bd)
+        
+        size <- val %>%
+            filter(k == j) %>% 
+            select(val) %>% 
+            unlist()
+        
+        sign <- val %>% 
+            filter(k == j) %>% 
+            select(sign) %>% 
+            unlist()
+        
+        if(the_year == 1990){
+            sign = 1
+        }
+        if(sign > 0){
+            color = 'black'
+        }else{
+            color = 'white'
+        }
+        
+        m <- m + 
+            geom_sf(size = exp(4 * size), data = bd, alpha = 0, color = color) 
+}
+m
+}
+
+```
+
+```{r}
+boundaries_map(1990) 
+ggsave('figs/detroit_boundaries_1990.pdf', width = 4, height = 3)
+```
+
+```{r}
+boundaries_map(2000) + guides(fill = FALSE)
+ggsave('figs/detroit_boundaries_2000.pdf', width = 4, height = 3)
+```
+
+```{r}
+boundaries_map(2010) + guides(fill = FALSE)
+ggsave('figs/detroit_boundaries_2010.pdf', width = 4, height = 3)
+```
+
+```{r}
+vals_1 %>% 
+    ggplot() + 
+    aes(x = t, y = val, color = as.factor(k), group = k) + 
+    geom_point() + 
+    geom_line()
+
+```
+
+```{r}
+vals_1 %>%
+    ggplot() + 
+    aes(x = k, y = val, group = t, color = as.factor(t)) + 
+    geom_point() + 
+    geom_line() 
+```
+
+
+```{r}
+I_CY <- vals_1 %>% 
+    group_by(t) %>% 
+    summarise(I_CY = sum(val))
+```
+
+```{r}
+# Mutual information values
+detroit_race %>% 
+    spread(key = group, value = n) %>% 
+    select(-tract) %>% 
+    nest(-t) %>% 
+    mutate(I_XY = map_dbl(data, mutual_info)) %>% 
+    left_join(I_CY)
+```
+
+
+
+```{r}
+detroit_race %>% 
+    left_join(cluster_lookup, by = c('tract' = 'geoid', 't' = 't')) %>% 
+    filter(!is.na(cluster)) %>% 
+    group_by(t, group, cluster) %>% 
+    summarise(n = sum(n)) %>% 
+    ungroup() %>% 
+    group_by(cluster,t) %>% 
+    mutate(perc = n / sum(n)) %>% 
+    ungroup() %>%
+    mutate(cluster = chartr("123456789", "ABCDEFGHI", cluster)) %>% 
+    ggplot() + 
+    aes(x = t, y = perc, color = group) + 
+    geom_line() + 
+    geom_point() + 
+    facet_wrap(~cluster, nrow = 1) + 
+    theme_bw() + 
+    scale_color_brewer(palette = 'Set1') + 
+    guides(color = FALSE) + 
+    scale_x_continuous(breaks = c(1990, 2000, 2010)) + 
+    theme(axis.text.x = element_text(angle = 90),
+          axis.title.x=element_blank()) + 
+    scale_y_continuous(labels=percent) + 
+    ylab('Population Share') 
+
+ggsave('figs/detroit_breakdown.pdf', width = 10, height = 2)
+```
+
